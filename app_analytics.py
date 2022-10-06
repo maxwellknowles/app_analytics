@@ -15,7 +15,6 @@ import numpy as np
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
 
 JSON_DATA = {'key':st.secrets['google_key_file']}
-JSON_DATA["key"]
 
 #functions
 #@st.cache(suppress_st_warning=True, allow_output_mutation=True)
@@ -25,7 +24,7 @@ cred = credentials.Certificate(JSON_DATA["key"])
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://console.firebase.google.com/u/2/project/chptr-b101d/firestore/data'
 })
-connect_to_firestore()
+#connect_to_firestore()
     
 db = firestore.client()
 
