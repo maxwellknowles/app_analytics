@@ -374,7 +374,7 @@ with tab4:
     #download "transaction" data
     transactions = chptrs_ordered[["Chptr ID", "Chptr Owner","Date","Location"]]
     st.write("**'Transaction' Data**")
-    AgGrid(transactions)
+    st.dataframe(transactions)
 
     transactions_csv = convert_df(transactions)
 
@@ -388,7 +388,7 @@ with tab4:
     #download "key action" data
     key_actions = contributions[['Chptr ID', 'Date', 'Comments', 'Count Likes', 'Contributors']]
     st.write("**'Key Action' (Contribution) Data**")
-    AgGrid(key_actions)
+    st.dataframe(key_actions)
 
     key_actions_csv = convert_df(key_actions)
 
@@ -402,7 +402,7 @@ with tab4:
 
     #download user data
     st.write("**User Data**")
-    AgGrid(users)
+    st.dataframe(users)
 
     users_csv = convert_df(users)
 
@@ -415,7 +415,7 @@ with tab4:
     
     #download chptr data
     st.write("**Chptr Data**")
-    AgGrid(chptrs)
+    st.dataframe(chptrs)
 
     chptrs_csv = convert_df(chptrs)
 
@@ -428,7 +428,7 @@ with tab4:
 
     #download chptr data
     st.write("**Contributions Data**")
-    AgGrid(contributions)
+    st.dataframe(contributions)
 
     contributions_csv = convert_df(contributions)
 
