@@ -24,10 +24,7 @@ def connect_to_firestore():
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://console.firebase.google.com/u/2/project/chptr-b101d/firestore/data'
     })
-if not db:
-    connect_to_firestore()
-else:
-    pass
+connect_to_firestore()
     
 db = firestore.client()
 
