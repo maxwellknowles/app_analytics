@@ -280,7 +280,7 @@ with col2:
 with col3:
     st.write("**CONTRIBUTIONS**")
     st.metric("Number of Contributions",len(contributions))
-    st.metric("Contributions per Chptr",round(statistics.mean(chptrs['Number of Contributors']),2))
+    st.metric("Contributions per Chptr",round(len(contributions)/len(chptrs),2))
     st.metric("Categories per Contribution",round(statistics.mean(contributions["Count Categories"]),2))
     #st.metric("Comments per Contribution",round(statistics.mean(contributions["Comments"]),2))
 
