@@ -1,0 +1,11 @@
+pandas
+firebase_admin
+firebase_admin
+firebase_admin
+firebase_admin
+datetime
+st_aggrid
+streamlit
+geopy
+statistics
+numpy
