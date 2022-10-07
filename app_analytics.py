@@ -10,6 +10,7 @@ import streamlit as st
 from geopy.geocoders import Nominatim
 import statistics
 import numpy as np
+import altair as alt
 
 #page setup
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
@@ -116,7 +117,7 @@ def get_chptrs():
         l.append(tup)
     chptrs_consolidated = pd.DataFrame(l,columns=["Chptr ID",
                                                 "Chptr Owner",
-                                                "Chapter Name",
+                                                "Name",
                                                 "Birthday",
                                                 "Passing Date",
                                                 "Location",
@@ -251,6 +252,8 @@ df = {"Category":category_titles, "Count of Contributions":values}
 category_performance = pd.DataFrame(df)
 category_performance = category_performance.set_index('Category')
 
+chptrs_owners = pd.merge(chptrs, users, how='inner', left_on = 'Chptr Owner', right_on="User ID")
+
 chptrs_ordered = contributions.sort_values("Date", ascending=True).drop_duplicates(["Chptr ID"])
 contributions_grouped = contributions.groupby("Chptr ID").agg({"Comments": 'sum', "Count Likes": 'sum'})
 chptrs_ordered = pd.merge(contributions_grouped, chptrs_ordered, how='inner', on = 'Chptr ID')
@@ -269,7 +272,7 @@ st.write("• Chptr has yet to make a push on marketing")
 st.write("• Chptr has yet to monetize Chptr creation, but that is what should present a 'transaction' event")
 st.write("• Contributions to Chptrs represent engagement, but are not considered monetizable actions, now or in the future")
 st.subheader("High Level Stats")
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.write("**USERS**")
     st.metric("Number of Users",len(users))
@@ -287,6 +290,10 @@ with col3:
     st.metric("Contributions per Chptr",round(len(contributions)/len(chptrs),2))
     st.metric("Categories per Contribution",round(statistics.mean(contributions["Count Categories"]),2))
     #st.metric("Comments per Contribution",round(statistics.mean(contributions["Comments"]),2))
+
+with col4:
+    st.write("**RATINGS**")
+    st.metric("Five-Star Reviews", "100%", "153 reviews")
 
 contributions_categories = contributions[['Month','Count Categories']]
 contributions_categories = contributions_categories.set_index("Month")
@@ -311,6 +318,34 @@ with tab1:
     chptrs_ordered_publications["Chptrs"] = chptrs_ordered_publications["Month"]
     chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
     st.bar_chart(chptrs_ordered_publications)
+
+    chptrs_passing_data = chptrs_ordered[["Chptr ID", "Birthday","Passing Date", "Date"]]
+    chptrs_passing_data = chptrs_passing_data[chptrs_passing_data['Passing Date'].notna()]
+    chptrs_passing_data = chptrs_passing_data[chptrs_passing_data['Date'].notna()]
+    chptrs_passing_data = chptrs_passing_data.reset_index(drop=True)
+    passing_delta = []
+    for i in range(len(chptrs_passing_data)):
+        chptr_id=chptrs_passing_data["Chptr ID"][i]
+        passing_date=str(chptrs_passing_data["Passing Date"][i]).split("T")[0]
+        passing_date=datetime.strptime(passing_date, '%Y-%m-%d').year
+        chptr_date=str(chptrs_passing_data["Date"][i]).split("T")[0]
+        chptr_date = datetime.strptime(chptr_date, '%Y-%m-%d').year
+        delta=chptr_date-passing_date
+        tup=(chptr_id, delta)
+        passing_delta.append(tup)
+    chptrs_passing=pd.DataFrame(passing_delta, columns=['Chptr ID', "Years Passed Before Chptr Creation"])
+    chptrs_passing=chptrs_passing[(chptrs_passing["Years Passed Before Chptr Creation"]>=0)]
+    
+    chptrs_agg = chptrs_passing.groupby("Years Passed Before Chptr Creation").agg({"Years Passed Before Chptr Creation": 'count'})
+    chptrs_agg["Count of Chptrs"] = chptrs_agg["Years Passed Before Chptr Creation"]
+    chptrs_agg = chptrs_agg.drop("Years Passed Before Chptr Creation", axis=1)
+    chptrs_agg = chptrs_agg.rename_axis("Years Passed Before Chptr Creation")
+    chptrs_agg = chptrs_agg.reset_index()
+    c = alt.Chart(chptrs_agg).mark_circle().encode(
+        x="Years Passed Before Chptr Creation", y="Count of Chptrs", size="Count of Chptrs", color="Count of Chptrs", tooltip=["Years Passed Before Chptr Creation", "Count of Chptrs"])
+
+    st.subheader("Chptr Count and Years Relative to Passing")
+    st.altair_chart(c, use_container_width=True)
 
     #graph of locations
     st.subheader("Chptrs by City")
@@ -367,6 +402,30 @@ with tab3:
     owners_agg["Count of Owners"] = owners_agg["Owner"]
     owners_agg = owners_agg.drop("Owner", axis=1)
     st.bar_chart(owners_agg)
+
+#with tab4:
+    #users who have engaged a lot with Chptr
+    #st.subheader("Super Users")
+    #chptrs_agg = chptrs_ordered.groupby("Owner").agg({"Owner": 'count'})
+    #chptrs_agg = chptrs_agg.rename_axis('Chptr Count')
+    #chptrs_agg = chptrs_agg.reset_index()
+    #super_user = "Kelsey Landrith"
+    #st.write("**User:** "+super_user)
+    #count = chptrs_agg[(chptrs_agg['Chptr Count']==super_user)]
+    #count = count.reset_index()
+    #count = count['Owner'][0]
+    #st.write("**Chptrs:** "+str(count))
+    #users_super = users[(users["User Name"]==super_user)]
+    #users_super = users_super.reset_index()
+    #users_super_id = users_super["User ID"][0]
+    #chptrs_super = chptrs[(chptrs["Chptr Owner"]==users_super_id)]
+    #chptrs_super = chptrs_super.reset_index()
+    #st.write("**Locations of Chptrs**")
+    #for i in range(len(chptrs_super)):
+    #    if len(chptrs_super['Location'][i])>0:
+    #        st.write("• "+(chptrs_super["Location"][i]))
+    #    else:
+    #        pass
 
 with tab4:
     #download data
