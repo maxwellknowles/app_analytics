@@ -262,8 +262,12 @@ chptrs_ordered = chptrs_ordered[(chptrs_ordered["Owner"]!="Test Test")]
 chptrs_ordered = chptrs_ordered[(chptrs_ordered["Owner"]!="Beta Test")]
 chptrs_ordered = pd.merge(chptrs, chptrs_ordered, how='outer', on = 'Chptr ID')
 
-#start of streamlit page
+#START OF STREAMLIT PAGE
 st.header("Chptr Analytics")
+st.write("**Key Assumptions and Notes**")
+st.write("• Chptr has yet to make a push on marketing")
+st.write("• Chptr is has yet to monetize Chptr creation, but that is what represents a 'transaction' event")
+st.write("• Contributions to Chptrs represent engagement, but are not currently considered monetizable actions, now or in the future")
 st.subheader("High Level Stats")
 col1, col2, col3 = st.columns(3)
 with col1:
