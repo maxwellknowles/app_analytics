@@ -265,6 +265,26 @@ chptrs_ordered = chptrs_ordered[(chptrs_ordered["Owner"]!="Test Test")]
 chptrs_ordered = chptrs_ordered[(chptrs_ordered["Owner"]!="Beta Test")]
 chptrs_ordered = pd.merge(chptrs, chptrs_ordered, how='outer', on = 'Chptr ID')
 
+contributions_sorted_date = contributions.sort_values("Chptr ID", ascending=True)
+contributions_sorted_date = contributions_sorted_date.sort_values("Date", ascending=True)
+contributions_sorted = contributions_sorted_date.reset_index(drop=True)
+contributions_sorted_no_dupes = contributions_sorted.drop_duplicates(["Chptr ID"])
+contributions_sorted_no_dupes = contributions_sorted_no_dupes.reset_index(drop=True)
+contributions_sorted_list=[]
+for i in range(len(contributions_sorted_no_dupes)):
+    chptr_id = contributions_sorted_no_dupes['Chptr ID'][i]
+    action_type = 'Contribution'
+    for j in range(len(contributions_sorted_no_dupes['Contributors'][i])):
+        contributor = contributions_sorted_no_dupes['Contributors'][i][j]
+        tup=(chptr_id,action_type,contributor)
+        contributions_sorted_list.append(tup)
+contributions_sorted = pd.DataFrame(contributions_sorted_list, columns=['Chptr ID', 'Action Type', 'User ID'])
+contributions_sorted = contributions_sorted.reset_index(drop=True)
+contributions_sorted = pd.merge(contributions_sorted, contributions_sorted_date, how='inner', on = 'Chptr ID')
+contributions_sorted = contributions_sorted.drop_duplicates(["Date"])
+contributions_sorted = contributions_sorted.reset_index(drop=True)
+
+
 #START OF STREAMLIT PAGE
 st.header("Chptr Analytics")
 st.write("**Key Assumptions and Notes**")
@@ -371,26 +391,26 @@ with tab2:
     st.bar_chart(chptrs_ordered_contributors)
 
     #comments on contributions over time
-    #st.subheader("Avg Count of Comments per Contribution by Month")
-    #chptrs_ordered_comments = chptrs_ordered[["Month","Comments_y"]]
-    #chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Comments_y": 'mean'})
-    #st.bar_chart(chptrs_ordered_comments)
+    st.subheader("Avg Count of Comments per Contribution by Month")
+    chptrs_ordered_comments = chptrs_ordered[["Month","Comments_y"]]
+    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Comments_y": 'mean'})
+    st.bar_chart(chptrs_ordered_comments)
 
     #likes on contributions over time
-    #st.subheader("Avg Count of Likes per Contribution by Month")
-    #chptrs_ordered_comments = chptrs_ordered[["Month","Count Likes_y"]]
-    #chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Count Likes_y": 'mean'})
-    #st.bar_chart(chptrs_ordered_comments)
+    st.subheader("Avg Count of Likes per Contribution by Month")
+    chptrs_ordered_comments = chptrs_ordered[["Month","Count Likes_y"]]
+    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Count Likes_y": 'mean'})
+    st.bar_chart(chptrs_ordered_comments)
 
     #length of description for contribution over time
-    #st.subheader("Avg Length of Description per Contribution by Month (Characters)")
-    #chptrs_ordered_description = chptrs_ordered[["Month","Length of Description_x"]]
-    #chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
-    #st.bar_chart(chptrs_ordered_description)
+    st.subheader("Avg Length of Description per Contribution by Month (Characters)")
+    chptrs_ordered_description = chptrs_ordered[["Month","Length of Description_x"]]
+    chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
+    st.bar_chart(chptrs_ordered_description)
 
     #graph of category usage
-    #st.subheader("Category Popularity")
-    #st.bar_chart(category_performance)
+    st.subheader("Category Popularity")
+    st.bar_chart(category_performance)
 
 with tab3:
     #count of owners at each ownership level
@@ -462,6 +482,19 @@ with tab4:
         mime='text/csv',
         )
 
+    #download 'contribution as action' data
+    contributions_actions = contributions_sorted[["Date", "Chptr ID", "User ID", "Action Type"]]
+    st.write("**Contributions as 'Key Action' Data**")
+    st.dataframe(contributions_actions)
+
+    key_actions_contributions = convert_df(contributions_actions)
+
+    st.download_button(
+        label="Download contributions as 'key action' data as CSV",
+        data=key_actions_contributions,
+        file_name='key_actions_contributions.csv',
+        mime='text/csv',
+        )
 
     #download user data
     st.write("**User Data**")
