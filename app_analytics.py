@@ -29,7 +29,6 @@ connect_to_firestore()
     
 db = firestore.client()
 
-
 #users collection to dataframe
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def get_users():
@@ -138,6 +137,7 @@ def get_contributions():
     contributions = pd.DataFrame(contributions_dict)
     l=[]
     for i in range(len(contributions)):
+        contribution_id = contributions['id'][i]
         chptrId = contributions['chptrId'][i]
         chptr_name = contributions['chptrName'][i]
         date = contributions['creationDate'][i]
@@ -156,7 +156,8 @@ def get_contributions():
         comments = contributions['amountOfComments'][i]
         likes = contributions['userLikesIds'][i]
         count_likes = len(contributions['userLikesIds'][i])
-        tup = (chptrId, 
+        tup = (contribution_id,
+            chptrId, 
             chptr_name, 
             date, 
             month,
@@ -171,7 +172,8 @@ def get_contributions():
             likes,
             count_likes)
         l.append(tup)
-        contributions_consolidated = pd.DataFrame(l,columns=["Chptr ID", 
+        contributions_consolidated = pd.DataFrame(l,columns=["Contribution ID",
+                                                            "Chptr ID", 
                                                             "Chptr Name", 
                                                             "Date", 
                                                             "Month",
@@ -284,6 +286,34 @@ contributions_sorted = pd.merge(contributions_sorted, contributions_sorted_date,
 contributions_sorted = contributions_sorted.drop_duplicates(["Date"])
 contributions_sorted = contributions_sorted.reset_index(drop=True)
 
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+def get_comments():
+    l=[]
+    for i in range(len(contributions)):
+        contribution_id=contributions['Contribution ID'][i]
+        doc_ref = db.collection('contributions').document(contribution_id).collection('comments')
+        for doc in doc_ref.stream():
+            item1 = doc_ref.document(doc.id)
+            item2 = item1.get().to_dict()
+            tup=(item2)
+            l.append(tup)
+    comments = pd.DataFrame(l)
+    return comments
+
+comments = get_comments()
+comments = comments[comments['owner'].notna()]
+comments = comments.reset_index(drop=True)
+k=[]
+for i in range(len(comments)):
+    comment_id = comments['id'][i]
+    user = comments['owner'][i]['id']
+    date = comments['timeOfCreation'][i]
+    action_type = 'Comment'
+    tup = (date, comment_id, user, action_type)
+    k.append(tup)
+comments_consolidated=pd.DataFrame(k, columns=['Date', 'Comment ID', 'User ID', 'Action Type'])
+comments_consolidated=comments_consolidated.sort_values("Date", ascending=True)
+comments_consolidated=comments_consolidated.reset_index(drop=True)
 
 #START OF STREAMLIT PAGE
 st.header("Chptr Analytics")
@@ -482,9 +512,9 @@ with tab4:
         mime='text/csv',
         )
 
-    #download 'contribution as action' data
+    #download contribution 'action' data
     contributions_actions = contributions_sorted[["Date", "Chptr ID", "User ID", "Action Type"]]
-    st.write("**Contributions as 'Key Action' Data**")
+    st.write("**Contributions 'Action' Data**")
     st.dataframe(contributions_actions)
 
     key_actions_contributions = convert_df(contributions_actions)
@@ -493,6 +523,19 @@ with tab4:
         label="Download contributions as 'key action' data as CSV",
         data=key_actions_contributions,
         file_name='key_actions_contributions.csv',
+        mime='text/csv',
+        )
+
+    #download comments 'action' data
+    st.write("**Comments 'Action' Data**")
+    st.dataframe(comments_consolidated)
+
+    key_actions_comments = convert_df(comments_consolidated)
+
+    st.download_button(
+        label="Download comments as 'key action' data as CSV",
+        data=key_actions_comments,
+        file_name='key_actions_comments.csv',
         mime='text/csv',
         )
 
