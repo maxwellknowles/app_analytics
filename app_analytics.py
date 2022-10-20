@@ -485,7 +485,9 @@ with tab4:
         return df.to_csv().encode('utf-8')
 
     #download "transaction" data
-    transactions = chptrs_ordered[["Chptr ID", "Chptr Owner","Date","Location"]]
+    transactions = chptrs_ordered[["Chptr ID", "Chptr Owner","Chptr Name", "Date","Location"]]
+    transactions = transactions.sort_values("Date", ascending=True)
+    transactions = transactions.reset_index(drop=True)
     st.write("**'Transaction' Data**")
     st.dataframe(transactions)
 
