@@ -30,7 +30,7 @@ connect_to_firestore()
 db = firestore.client()
 
 #users collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_users():
     users = list(db.collection(u'users').stream())
     users_dict = list(map(lambda x: x.to_dict(), users))
@@ -70,7 +70,7 @@ def get_users():
     return users_consolidated
 
 #chptrs collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_chptrs():
     chptrs = list(db.collection(u'chptrs').stream())
     chptrs_dict = list(map(lambda x: x.to_dict(), chptrs))
@@ -130,7 +130,7 @@ def get_chptrs():
     return chptrs_consolidated
 
 #contributions collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_contributions():
     contributions = list(db.collection(u'contributions').stream())
     contributions_dict = list(map(lambda x: x.to_dict(), contributions))
@@ -286,7 +286,7 @@ contributions_sorted = pd.merge(contributions_sorted, contributions_sorted_date,
 contributions_sorted = contributions_sorted.drop_duplicates(["Date"])
 contributions_sorted = contributions_sorted.reset_index(drop=True)
 
-@st.cache(suppress_st_warning=True, allow_output_mutation=True)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_comments():
     l=[]
     for i in range(len(contributions)):
@@ -415,32 +415,32 @@ with tab2:
     st.bar_chart(users_agg)
 
     #contributions per chptr over time
-    #st.subheader("Avg Count of Contributors per Chptr by Month")
-    #chptrs_ordered_contributors = chptrs_ordered[["Month","Count Contributors"]]
-    #chptrs_ordered_contributors = chptrs_ordered_contributors.groupby("Month").agg({"Count Contributors": 'mean'})
-    #st.bar_chart(chptrs_ordered_contributors)
+    st.subheader("Avg Count of Contributors per Chptr by Month")
+    chptrs_ordered_contributors = chptrs_ordered[["Month","Count Contributors"]]
+    chptrs_ordered_contributors = chptrs_ordered_contributors.groupby("Month").agg({"Count Contributors": 'mean'})
+    st.bar_chart(chptrs_ordered_contributors)
 
     #comments on contributions over time
-    #st.subheader("Avg Count of Comments per Contribution by Month")
-    #chptrs_ordered_comments = chptrs_ordered[["Month","Comments_y"]]
-    #chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Comments_y": 'mean'})
-    #st.bar_chart(chptrs_ordered_comments)
+    st.subheader("Avg Count of Comments per Contribution by Month")
+    chptrs_ordered_comments = chptrs_ordered[["Month","Comments_y"]]
+    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Comments_y": 'mean'})
+    st.bar_chart(chptrs_ordered_comments)
 
     #likes on contributions over time
-    #st.subheader("Avg Count of Likes per Contribution by Month")
-    #chptrs_ordered_comments = chptrs_ordered[["Month","Count Likes_y"]]
-    #chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Count Likes_y": 'mean'})
-    #st.bar_chart(chptrs_ordered_comments)
+    st.subheader("Avg Count of Likes per Contribution by Month")
+    chptrs_ordered_comments = chptrs_ordered[["Month","Count Likes_y"]]
+    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Count Likes_y": 'mean'})
+    st.bar_chart(chptrs_ordered_comments)
 
     #length of description for contribution over time
-    #st.subheader("Avg Length of Description per Contribution by Month (Characters)")
-    #chptrs_ordered_description = chptrs_ordered[["Month","Length of Description_x"]]
-    #chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
-    #st.bar_chart(chptrs_ordered_description)
+    st.subheader("Avg Length of Description per Contribution by Month (Characters)")
+    chptrs_ordered_description = chptrs_ordered[["Month","Length of Description_x"]]
+    chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
+    st.bar_chart(chptrs_ordered_description)
 
     #graph of category usage
-    #st.subheader("Category Popularity")
-    #st.bar_chart(category_performance)
+    st.subheader("Category Popularity")
+    st.bar_chart(category_performance)
 
 with tab3:
     #count of owners at each ownership level
@@ -513,7 +513,7 @@ with tab4:
         )
 
     #download contribution 'action' data
-    contributions_actions = contributions_sorted[["Date", "Chptr ID", "User ID", "Action Type"]]
+    contributions_actions = contributions_sorted[["Date", "Chptr ID", "User ID", "Chptr Name", "Action Type"]]
     st.write("**Contributions 'Action' Data**")
     st.dataframe(contributions_actions)
 
