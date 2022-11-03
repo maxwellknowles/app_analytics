@@ -11,6 +11,7 @@ from geopy.geocoders import Nominatim
 import statistics
 import numpy as np
 import altair as alt
+import json
 
 #page setup
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
