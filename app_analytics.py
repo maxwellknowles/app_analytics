@@ -11,13 +11,13 @@ from geopy.geocoders import Nominatim
 import statistics
 import numpy as np
 import altair as alt
-import json
+import ast
 
 #page setup
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
 
 #JSON_DATA = {"key":st.secrets['google_key_file']}
-JSON_DATA = st.secrets['google_key_file']
+JSON_DATA = ast.literal_eval(st.secrets['google_key_file'])
 st.write(type(JSON_DATA))
 
 #functions
