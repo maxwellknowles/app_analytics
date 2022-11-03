@@ -17,7 +17,7 @@ import json
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
 
 #JSON_DATA = {"key":st.secrets['google_key_file']}
-JSON_DATA = json.loads(st.secrets['google_key_file'])
+JSON_DATA = st.secrets['google_key_file']
 st.write(JSON_DATA)
 
 #functions
