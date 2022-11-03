@@ -18,9 +18,7 @@ st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="w
 
 #JSON_DATA = {"key":st.secrets['google_key_file']}
 secret = str(st.secrets['google_key_file'])
-st.write(secret)
 JSON_DATA = ast.literal_eval(secret)
-st.write(JSON_DATA)
 
 #functions
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
