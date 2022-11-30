@@ -409,6 +409,40 @@ with tab1:
     st.map(chptrs_lat_lon)
 
 with tab2:
+    st.subheader("Users without a chptr or contribution")
+    owners_list = []
+    contributors_list = []
+    for i in range(len(chptrs)):
+        owner = chptrs["Chptr Owner"][i]
+        tup = (owner)
+        owners_list.append(owner)
+        contributors = chptrs["Contributors"][i]
+        contributors_list += contributors
+        #contributors_list.append(contributor)
+    final_list = owners_list + contributors_list
+    final_set = set(final_list)
+
+    users_list = []
+    for i in range(len(users)):
+        user = users["User ID"][i]
+        tup = (user)
+        users_list.append(user)
+    
+    users_set = set(users_list)
+    unactivated_list = users_set - final_set 
+    #unactivated_list = list(set(final_list).difference(users_list))
+
+    l=[]
+    for i in range(len(users)):
+        if users["User ID"][i] in unactivated_list:
+            user_id = users["User ID"][i]
+            name = users["User Name"][i]
+            tup = (user_id, name)
+            l.append(tup)
+    unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
+    st.write("Users with a chptr or contribution: ", len(unactivated_df))
+    AgGrid(unactivated_df)
+
     #count of users at each contribution level
     st.subheader("Count of Users by Contribution Number")
     users_agg = users_with_contribution_count.groupby("Count of Contributions").agg({"Count of Contributions": 'count'})
@@ -442,10 +476,44 @@ with tab2:
     st.bar_chart(chptrs_ordered_description)
 
     #graph of category usage
-    st.subheader("Category Popularity")
-    st.bar_chart(category_performance)
+    #st.subheader("Category Popularity")
+    #st.bar_chart(category_performance)
 
 with tab3:
+    st.subheader("Days Since Last Contribution")
+    #sorting contributions by Chptr ID and date of contributions, getting the latest contribution for each
+    contributions_organized = contributions.sort_values("Chptr ID")
+    contributions_organized = contributions_organized.sort_values("Date", ascending=False)
+    contributions_organized = contributions_organized.drop_duplicates('Chptr ID')
+    contributions_organized = contributions_organized.reset_index(drop=True)
+
+    #today
+    today = datetime.today()
+    
+    l=[]
+    for i in range(len(contributions_organized)):
+        chptr_id = contributions_organized["Chptr ID"][i]
+        chptr_name = contributions_organized["Chptr Name"][i]
+        latest_contribution = contributions_organized["Date"][i]
+        latest_contribution = latest_contribution.split("T")[0]
+        latest_contribution = datetime.strptime(latest_contribution, '%Y-%m-%d')
+        days_since = today-latest_contribution
+        days_since = days_since.days
+        tup = (chptr_id, chptr_name, latest_contribution, days_since)
+        l.append(tup)
+    days_since_latest_contribution = pd.DataFrame(l, columns=["Chptr ID", "Chptr Name", "Latest Contribution", "Days Since"]) 
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.write("3 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>3)]))
+    with col2:
+        st.write("7 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>7)]))
+    with col3:
+        st.write("30 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>30)]))
+    with col4:
+        st.write("90 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>90)]))
+
+    AgGrid(days_since_latest_contribution)
+
     #count of owners at each ownership level
     st.subheader("Count of Owners by Chptr Count")
     owners_agg = chptrs_ordered.groupby("Owner").agg({"Owner": 'count'})
@@ -492,7 +560,7 @@ with tab4:
     transactions = transactions.sort_values("Date", ascending=True)
     transactions = transactions.reset_index(drop=True)
     st.write("**'Transaction' Data**")
-    st.dataframe(transactions)
+    AgGrid(transactions)
 
     transactions_csv = convert_df(transactions)
 
@@ -506,7 +574,7 @@ with tab4:
     #download "key action" data
     key_actions = contributions[['Chptr ID', 'Date', 'Comments', 'Count Likes', 'Contributors']]
     st.write("**'Key Action' (Contribution) Data**")
-    st.dataframe(key_actions)
+    AgGrid(key_actions)
 
     key_actions_csv = convert_df(key_actions)
 
@@ -520,7 +588,7 @@ with tab4:
     #download contribution 'action' data
     contributions_actions = contributions_sorted[["Date", "Chptr ID", "User ID", "Chptr Name", "Action Type"]]
     st.write("**Contributions 'Action' Data**")
-    st.dataframe(contributions_actions)
+    AgGrid(contributions_actions)
 
     key_actions_contributions = convert_df(contributions_actions)
 
@@ -533,7 +601,7 @@ with tab4:
 
     #download comments 'action' data
     st.write("**Comments 'Action' Data**")
-    st.dataframe(comments_consolidated)
+    AgGrid(comments_consolidated)
 
     key_actions_comments = convert_df(comments_consolidated)
 
@@ -546,7 +614,7 @@ with tab4:
 
     #download user data
     st.write("**User Data**")
-    st.dataframe(users)
+    AgGrid(users)
 
     users_csv = convert_df(users)
 
@@ -559,7 +627,7 @@ with tab4:
     
     #download chptr data
     st.write("**Chptr Data**")
-    st.dataframe(chptrs)
+    AgGrid(chptrs)
 
     chptrs_csv = convert_df(chptrs)
 
@@ -572,7 +640,7 @@ with tab4:
 
     #download chptr data
     st.write("**Contributions Data**")
-    st.dataframe(contributions)
+    AgGrid(contributions)
 
     contributions_csv = convert_df(contributions)
 
