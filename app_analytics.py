@@ -440,7 +440,7 @@ with tab2:
             tup = (user_id, name)
             l.append(tup)
     unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
-    st.write("Users with a chptr or contribution: ", len(unactivated_df))
+    st.write("Users without a chptr or contribution: ", len(unactivated_df))
     AgGrid(unactivated_df)
 
     #count of users at each contribution level
