@@ -441,7 +441,7 @@ with tab2:
             l.append(tup)
     unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
     st.write("Users without a chptr or contribution: ", len(unactivated_df))
-    AgGrid(unactivated_df)
+    st.dataframe(unactivated_df)
 
     #count of users at each contribution level
     st.subheader("Count of Users by Contribution Number")
@@ -512,7 +512,7 @@ with tab3:
     with col4:
         st.write("90 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>90)]))
 
-    AgGrid(days_since_latest_contribution)
+    st.dataframe(days_since_latest_contribution)
 
     #count of owners at each ownership level
     st.subheader("Count of Owners by Chptr Count")
@@ -560,7 +560,7 @@ with tab4:
     transactions = transactions.sort_values("Date", ascending=True)
     transactions = transactions.reset_index(drop=True)
     st.write("**'Transaction' Data**")
-    AgGrid(transactions)
+    st.dataframe(transactions)
 
     transactions_csv = convert_df(transactions)
 
@@ -574,7 +574,7 @@ with tab4:
     #download "key action" data
     key_actions = contributions[['Chptr ID', 'Date', 'Comments', 'Count Likes', 'Contributors']]
     st.write("**'Key Action' (Contribution) Data**")
-    AgGrid(key_actions)
+    st.dataframe(key_actions)
 
     key_actions_csv = convert_df(key_actions)
 
@@ -588,7 +588,7 @@ with tab4:
     #download contribution 'action' data
     contributions_actions = contributions_sorted[["Date", "Chptr ID", "User ID", "Chptr Name", "Action Type"]]
     st.write("**Contributions 'Action' Data**")
-    AgGrid(contributions_actions)
+    st.dataframe(contributions_actions)
 
     key_actions_contributions = convert_df(contributions_actions)
 
@@ -601,7 +601,7 @@ with tab4:
 
     #download comments 'action' data
     st.write("**Comments 'Action' Data**")
-    AgGrid(comments_consolidated)
+    st.dataframe(comments_consolidated)
 
     key_actions_comments = convert_df(comments_consolidated)
 
@@ -614,7 +614,7 @@ with tab4:
 
     #download user data
     st.write("**User Data**")
-    AgGrid(users)
+    st.dataframe(users)
 
     users_csv = convert_df(users)
 
@@ -627,7 +627,7 @@ with tab4:
     
     #download chptr data
     st.write("**Chptr Data**")
-    AgGrid(chptrs)
+    st.dataframe(chptrs)
 
     chptrs_csv = convert_df(chptrs)
 
@@ -640,7 +640,7 @@ with tab4:
 
     #download chptr data
     st.write("**Contributions Data**")
-    AgGrid(contributions)
+    st.dataframe(contributions)
 
     contributions_csv = convert_df(contributions)
 
