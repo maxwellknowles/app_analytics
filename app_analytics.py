@@ -445,7 +445,6 @@ with tab2:
     
     #download unactivated data
     st.write("**Unactivated data**")
-    st.dataframe(chptrs)
     
     @st.cache
     def convert_df(df):
