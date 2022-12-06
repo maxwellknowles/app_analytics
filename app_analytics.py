@@ -442,6 +442,24 @@ with tab2:
     unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
     st.write("Users without a chptr or contribution: ", len(unactivated_df))
     st.dataframe(unactivated_df)
+    
+    #download unactivated data
+    st.write("**Unactivated data**")
+    st.dataframe(chptrs)
+    
+    @st.cache
+    def convert_df(df):
+        # IMPORTANT: Cache the conversion to prevent computation on every rerun
+        return df.to_csv().encode('utf-8')
+
+    unactivated_df_csv = convert_df(unactivated_df)
+
+    st.download_button(
+        label="Download unactivated user data as CSV",
+        data=unactivated_df_csv,
+        file_name='unactivated_users.csv',
+        mime='text/csv',
+        )
 
     #count of users at each contribution level
     st.subheader("Count of Users by Contribution Number")
