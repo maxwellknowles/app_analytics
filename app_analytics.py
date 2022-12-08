@@ -496,6 +496,9 @@ with tab2:
     kmeans = KMeans(n_clusters=n, init='k-means++', max_iter=300, n_init=10, random_state=42)
     pred_y = kmeans.fit_predict(kmeans_chptrs_scaled)
     kmeans_chptrs['Classification'] = pd.Series(pred_y, index=kmeans_chptrs.index)
+    chptrs_cohort_last['Classification'] = pd.Series(pred_y, index=kmeans_chptrs.index)
+    chptrs_cohort_last = chptrs_cohort_last.drop("Days Between Contributions",axis=1)
+    chptrs_cohort_last = chptrs_cohort_last.reset_index(drop=True)
 
     import plotly.express as px
 
@@ -529,7 +532,7 @@ with tab2:
     with col1:
         st.write("**Average Days Between Last and First Contribution:** ", str(round(sum(chptrs_cohort_last["Days Between First and Last"])/len(chptrs_cohort_last),2)))
 
-        st.dataframe(chptrs_cohort)
+        st.dataframe(chptrs_cohort_last)
 
         chptrs_cohort_csv = convert_df(chptrs_cohort)
 
