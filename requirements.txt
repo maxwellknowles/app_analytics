@@ -13,3 +13,4 @@ altair
 scikit_learn
 kneed
 matplotlib
+plotly
