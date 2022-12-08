@@ -10,6 +10,6 @@ statistics
 numpy
 streamlit-aggrid
 altair
-scikit-learn
+scikit_learn
 kneed
 matplotlib
