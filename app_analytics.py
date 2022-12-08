@@ -318,14 +318,20 @@ comments_consolidated=pd.DataFrame(k, columns=['Date', 'Comment ID', 'User ID', 
 comments_consolidated=comments_consolidated.sort_values("Date", ascending=True)
 comments_consolidated=comments_consolidated.reset_index(drop=True)
 
+#download data
+@st.cache
+def convert_df(df):
+    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+    return df.to_csv().encode('utf-8')
+
 #START OF STREAMLIT PAGE
 st.header("Chptr Analytics")
 st.write("**Key Assumptions and Notes**")
-st.write("• Chptr has yet to make a push on marketing")
+#st.write("• Chptr has yet to make a push on marketing")
 st.write("• Chptr has yet to monetize Chptr creation, but that is what should present a 'transaction' event")
 st.write("• Contributions to Chptrs represent engagement, but are not considered monetizable actions, now or in the future")
 st.subheader("High Level Stats")
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 with col1:
     st.write("**USERS**")
     st.metric("Number of Users",len(users))
@@ -341,12 +347,13 @@ with col3:
     st.write("**CONTRIBUTIONS**")
     st.metric("Number of Contributions",len(contributions))
     st.metric("Contributions per Chptr",round(len(contributions)/len(chptrs),2))
-    st.metric("Categories per Contribution",round(statistics.mean(contributions["Count Categories"]),2))
-    #st.metric("Comments per Contribution",round(statistics.mean(contributions["Comments"]),2))
+    st.metric("Contributors per Chptr",round(sum(chptrs["Number of Contributors"])/len(chptrs),2))
+    #st.metric("Categories per Contribution",round(statistics.mean(contributions["Count Categories"]),2))
+    st.metric("Comments per Contribution",round(statistics.mean(contributions["Comments"]),2))
 
-with col4:
-    st.write("**RATINGS**")
-    st.metric("Five-Star Reviews", "100%", "153 reviews")
+#with col4:
+    #st.write("**RATINGS**")
+    #st.metric("Five-Star Reviews", "100%", "153 reviews")
 
 contributions_categories = contributions[['Month','Count Categories']]
 contributions_categories = contributions_categories.set_index("Month")
@@ -361,7 +368,7 @@ contributions_max_contributors = contributions.sort_values('Count Contributors',
 contributions_max_contributors = contributions_max_contributors[["Month","Count Contributors"]]
 contributions_max_contributors = contributions_max_contributors.set_index("Month")
 
-tab1, tab2, tab3, tab4 = st.tabs(["Acquisition", "Activation", "Retention", "Download Data"])
+tab1, tab2, tab3, tab4 = st.tabs(["Explore Chptrs", "Explore Contributions", "Explore Users", "Download Data"])
 
 with tab1:
     #chptrs over time
@@ -409,6 +416,180 @@ with tab1:
     st.map(chptrs_lat_lon)
 
 with tab2:
+    #contributions per chptr over time
+    st.subheader("Avg Count of Contributors per Chptr by Month")
+    chptrs_ordered_contributors = chptrs_ordered[["Month","Count Contributors"]]
+    chptrs_ordered_contributors = chptrs_ordered_contributors.groupby("Month").agg({"Count Contributors": 'mean'})
+    st.bar_chart(chptrs_ordered_contributors)
+
+    st.subheader("Engagement Span of Chptr Contribution")
+    #sorting contributions by Chptr ID and date of contributions, getting the latest contribution for each
+    contributions_organized_date_descending = contributions.sort_values("Date", ascending=False)
+    #contributions_organized_date_ascending = contributions.sort_values("Date", ascending=True)
+    #contributions_organized = contributions_organized_date_ascending.reset_index(drop=True)
+    contributions_organized = contributions.sort_values(by=["Chptr ID", "Date"], ascending=[False,True])
+    contributions_organized = contributions_organized.reset_index(drop=True)
+    contributions_organized_narrowed = contributions_organized_date_descending.drop_duplicates('Chptr ID')
+    contributions_organized_narrowed = contributions_organized_narrowed.reset_index(drop=True)
+
+    #creating dataframe with every contribution and its days since the first contribution (less than 1 rounds to 1)
+    l=[]
+    count = 1
+    gap = 0
+    time_total = 0
+    for i in range(len(contributions_organized)):
+        chptr_id = contributions_organized["Chptr ID"][i]
+        chptr_name = contributions_organized["Chptr Name"][i]
+        chptr_date = contributions_organized["Date"][i]
+        if i>0 and chptr_id == contributions_organized["Chptr ID"][i-1]:
+            count += 1
+            day_now = contributions_organized["Date"][i]
+            day_now_1 = day_now.split("T")[0]
+            day_now_2 = day_now.split("T")[1]
+            day_now_2 = day_now_2.split("Z")[0]
+            day_now = day_now_1+" "+day_now_2
+            #day_now = datetime.strptime(day_now, '%Y-%m-%d')
+            day_now = datetime.strptime(day_now, '%Y-%m-%d %H:%M:%S.%f')
+            day_last = contributions_organized["Date"][i-1]
+            day_last_1 = day_last.split("T")[0]
+            day_last_2 = day_last.split("T")[1]
+            day_last_2 = day_last_2.split("Z")[0]
+            day_last = day_last_1+" "+day_last_2
+            #day_last = datetime.strptime(day_last, '%Y-%m-%d')
+            day_last = datetime.strptime(day_last, '%Y-%m-%d %H:%M:%S.%f')
+            day_gap = day_now - day_last
+            day_gap_seconds = day_gap.seconds
+            time_total = time_total + day_gap_seconds
+            time_total_hours = time_total/(3600*24)
+            #hour_now = (hour_now.seconds)/60
+            gap = day_gap_seconds
+            gap_hours = gap/(3600*24)
+            #hour = (hour.seconds)/60
+        else:
+            count = 1
+            gap_hours = 0
+            time_total = 0
+            time_total_hours = 0
+        #contribution_date = contributions_organized["Date"][i]
+        #contribution_date = contribution_date.split("T")[0]
+        #contribution_date = datetime.strptime(contribution_date, '%Y-%m-%d')
+        tup = (chptr_id, chptr_name, chptr_date, gap_hours, time_total_hours, count)
+        l.append(tup)
+    chptrs_cohort = pd.DataFrame(l, columns=["Chptr ID", "Chptr Name", "Date", "Days Between Contributions", "Days Between First and Last", "Count of Contributions"])
+
+    chptrs_cohort_last = chptrs_cohort.sort_values("Days Between First and Last", ascending=False)
+    chptrs_cohort_last = chptrs_cohort_last.drop_duplicates("Chptr Name")
+    chptrs_cohort_last = chptrs_cohort_last.reset_index()
+
+    kmeans_chptrs = chptrs_cohort_last[["Days Between First and Last", 'Count of Contributions']]
+    kmeans_chptrs_scaled = StandardScaler().fit_transform(kmeans_chptrs)
+    kmeans_chptrs_scaled = pd.DataFrame(kmeans_chptrs_scaled, columns = kmeans_chptrs.columns)
+
+    #kmeans clustering using latest contribution and count of total contributions
+    sse = []
+    for k in range(1, 11):
+        kmeans = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=10, random_state=42)
+        kmeans.fit(kmeans_chptrs_scaled)
+        sse.append(kmeans.inertia_)
+    kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
+    n = kl.elbow
+    kmeans = KMeans(n_clusters=n, init='k-means++', max_iter=300, n_init=10, random_state=42)
+    pred_y = kmeans.fit_predict(kmeans_chptrs_scaled)
+    kmeans_chptrs['Classification'] = pd.Series(pred_y, index=kmeans_chptrs.index)
+
+    import plotly.express as px
+
+    fig = px.scatter(
+        x=kmeans_chptrs["Days Between First and Last"],
+        y=kmeans_chptrs['Count of Contributions'],
+        color=kmeans_chptrs['Classification']
+    )
+    fig.update_layout(
+        xaxis_title="Days Between First and Last",
+        yaxis_title='Count of Contributions',
+    )
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+
+    scatter = ax.scatter(
+        x=kmeans_chptrs["Days Between First and Last"],
+        y=kmeans_chptrs['Count of Contributions'],
+        c=kmeans_chptrs['Classification'],
+        label=kmeans_chptrs['Classification']
+    )
+
+    legend = ax.legend(*scatter.legend_elements(),
+                loc="lower right", title="Chptr Cluster")
+
+    ax.set_xlabel("Days Between First and Last")
+    ax.set_ylabel("Count of Contributions")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Average Days Between Last and First Contribution:** ", str(round(sum(chptrs_cohort_last["Days Between First and Last"])/len(chptrs_cohort_last),2)))
+
+        st.dataframe(chptrs_cohort)
+
+        chptrs_cohort_csv = convert_df(chptrs_cohort)
+
+        st.download_button(
+            label="Download Chptr contribution cohorts as CSV",
+            data=chptrs_cohort_csv,
+            file_name='chptr_contribution_cohorts.csv',
+            mime='text/csv',
+            )
+    with col2:
+        st.write(fig)
+
+    st.subheader("Days Since Last Contribution by Chptr")
+    #today
+    today = datetime.today()
+    
+    l=[]
+    for i in range(len(contributions_organized_narrowed)):
+        chptr_id = contributions_organized_narrowed["Chptr ID"][i]
+        chptr_name = contributions_organized_narrowed["Chptr Name"][i]
+        latest_contribution = contributions_organized_narrowed["Date"][i]
+        latest_contribution = latest_contribution.split("T")[0]
+        latest_contribution = datetime.strptime(latest_contribution, '%Y-%m-%d')
+        days_since = today-latest_contribution
+        days_since = days_since.days
+        tup = (chptr_id, chptr_name, latest_contribution, days_since)
+        l.append(tup)
+    days_since_latest_contribution = pd.DataFrame(l, columns=["Chptr ID", "Chptr Name", "Latest Contribution", "Days Since"]) 
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.write("3 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>3)]))
+    with col2:
+        st.write("7 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>7)]))
+    with col3:
+        st.write("30 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>30)]))
+    with col4:
+        st.write("90 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>90)]))
+
+    st.dataframe(days_since_latest_contribution)
+
+    #comments on contributions over time
+    st.subheader("Avg Count of Comments per Contribution by Month")
+    chptrs_ordered_comments = chptrs_ordered[["Month","Comments_y"]]
+    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Comments_y": 'mean'})
+    st.bar_chart(chptrs_ordered_comments)
+
+    #likes on contributions over time
+    st.subheader("Avg Count of Likes per Contribution by Month")
+    chptrs_ordered_comments = chptrs_ordered[["Month","Count Likes_y"]]
+    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Count Likes_y": 'mean'})
+    st.bar_chart(chptrs_ordered_comments)
+
+    #length of description for contribution over time
+    st.subheader("Avg Length of Description per Contribution by Month (Characters)")
+    chptrs_ordered_description = chptrs_ordered[["Month","Length of Description_x"]]
+    chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
+    st.bar_chart(chptrs_ordered_description)
+
+
+with tab3:
     st.subheader("Users without a chptr or contribution")
     owners_list = []
     contributors_list = []
@@ -430,7 +611,6 @@ with tab2:
     
     users_set = set(users_list)
     unactivated_list = users_set - final_set 
-    #unactivated_list = list(set(final_list).difference(users_list))
 
     l=[]
     for i in range(len(users)):
@@ -442,14 +622,9 @@ with tab2:
     unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
     st.write("Users without a chptr or contribution: ", len(unactivated_df))
     st.dataframe(unactivated_df)
-    
+
     #download unactivated data
     st.write("**Unactivated data**")
-    
-    @st.cache
-    def convert_df(df):
-        # IMPORTANT: Cache the conversion to prevent computation on every rerun
-        return df.to_csv().encode('utf-8')
 
     unactivated_df_csv = convert_df(unactivated_df)
 
@@ -467,69 +642,6 @@ with tab2:
     users_agg["Count of Users"] = users_agg["Count of Contributions"]
     users_agg = users_agg.drop("Count of Contributions", axis=1)
     st.bar_chart(users_agg)
-
-    #contributions per chptr over time
-    st.subheader("Avg Count of Contributors per Chptr by Month")
-    chptrs_ordered_contributors = chptrs_ordered[["Month","Count Contributors"]]
-    chptrs_ordered_contributors = chptrs_ordered_contributors.groupby("Month").agg({"Count Contributors": 'mean'})
-    st.bar_chart(chptrs_ordered_contributors)
-
-    #comments on contributions over time
-    st.subheader("Avg Count of Comments per Contribution by Month")
-    chptrs_ordered_comments = chptrs_ordered[["Month","Comments_y"]]
-    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Comments_y": 'mean'})
-    st.bar_chart(chptrs_ordered_comments)
-
-    #likes on contributions over time
-    st.subheader("Avg Count of Likes per Contribution by Month")
-    chptrs_ordered_comments = chptrs_ordered[["Month","Count Likes_y"]]
-    chptrs_ordered_comments = chptrs_ordered_comments.groupby("Month").agg({"Count Likes_y": 'mean'})
-    st.bar_chart(chptrs_ordered_comments)
-
-    #length of description for contribution over time
-    st.subheader("Avg Length of Description per Contribution by Month (Characters)")
-    chptrs_ordered_description = chptrs_ordered[["Month","Length of Description_x"]]
-    chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
-    st.bar_chart(chptrs_ordered_description)
-
-    #graph of category usage
-    #st.subheader("Category Popularity")
-    #st.bar_chart(category_performance)
-
-with tab3:
-    st.subheader("Days Since Last Contribution")
-    #sorting contributions by Chptr ID and date of contributions, getting the latest contribution for each
-    contributions_organized = contributions.sort_values("Chptr ID")
-    contributions_organized = contributions_organized.sort_values("Date", ascending=False)
-    contributions_organized = contributions_organized.drop_duplicates('Chptr ID')
-    contributions_organized = contributions_organized.reset_index(drop=True)
-
-    #today
-    today = datetime.today()
-    
-    l=[]
-    for i in range(len(contributions_organized)):
-        chptr_id = contributions_organized["Chptr ID"][i]
-        chptr_name = contributions_organized["Chptr Name"][i]
-        latest_contribution = contributions_organized["Date"][i]
-        latest_contribution = latest_contribution.split("T")[0]
-        latest_contribution = datetime.strptime(latest_contribution, '%Y-%m-%d')
-        days_since = today-latest_contribution
-        days_since = days_since.days
-        tup = (chptr_id, chptr_name, latest_contribution, days_since)
-        l.append(tup)
-    days_since_latest_contribution = pd.DataFrame(l, columns=["Chptr ID", "Chptr Name", "Latest Contribution", "Days Since"]) 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.write("3 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>3)]))
-    with col2:
-        st.write("7 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>7)]))
-    with col3:
-        st.write("30 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>30)]))
-    with col4:
-        st.write("90 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>90)]))
-
-    st.dataframe(days_since_latest_contribution)
 
     #count of owners at each ownership level
     st.subheader("Count of Owners by Chptr Count")
@@ -566,12 +678,6 @@ with tab3:
     #        pass
 
 with tab4:
-    #download data
-    @st.cache
-    def convert_df(df):
-        # IMPORTANT: Cache the conversion to prevent computation on every rerun
-        return df.to_csv().encode('utf-8')
-
     #download "transaction" data
     transactions = chptrs_ordered[["Chptr ID", "Chptr Owner","Chptr Name", "Date","Location"]]
     transactions = transactions.sort_values("Date", ascending=True)
