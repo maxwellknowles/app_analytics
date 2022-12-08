@@ -10,3 +10,6 @@ statistics
 numpy
 streamlit-aggrid
 altair
+sklearn
+kneed
+matplotlib
