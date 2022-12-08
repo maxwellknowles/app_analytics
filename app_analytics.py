@@ -12,6 +12,10 @@ import statistics
 import numpy as np
 import altair as alt
 import ast
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from kneed import KneeLocator
+import matplotlib.pyplot as plt
 
 #page setup
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
