@@ -717,10 +717,10 @@ with tab3:
 
     with col2:
         st.write(fig)
-        
+    
+    chptrs_ordered
     st.subheader("Users with Pending Chptr Requests")
     users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
-    users_pending_invites
     users_pending_invites = users_pending_invites.reset_index(drop=True)
     for i in range(len(users_pending_invites)):
         user_id = users_pending_invites["User ID"][i]
