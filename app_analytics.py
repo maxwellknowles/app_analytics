@@ -598,7 +598,6 @@ with tab2:
     chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
     st.bar_chart(chptrs_ordered_description)
 
-
 with tab3:
     st.subheader("Users with Pending Chptr Requests")
     users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
