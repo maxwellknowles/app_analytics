@@ -600,6 +600,26 @@ with tab2:
 
 
 with tab3:
+    st.subheader("Users with Pending Chptr Requests")
+    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
+    users_pending_invites = users_pending_invites.reset_index(drop=True)
+    for i in range(len(users_pending_invites)):
+        user_id = users_pending_invites["User ID"][i]
+        user_name = users_pending_invites["User Name"][i]
+        for k in users_pending_invites["Pending Chptr Requests"][i]:
+            pending_chptr = k
+            tup = (user_id, user_name, pending_chptr)
+            l.append(tup)
+    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
+    st.write("Count of pending requests: ", len(users_pending))
+    users_pending = users_pending.sort_values("User ID")
+    users_pending = users_pending.reset_index(drop=True)
+    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
+    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
+    users_pending["Chptr Date"] = users_pending["Date"]
+    users_pending = users_pending.drop("Date", axis=1)
+    st.dataframe(users_pending)
+    
     st.subheader("Users without a chptr or contribution")
     owners_list = []
     contributors_list = []
@@ -719,26 +739,6 @@ with tab3:
     with col2:
         st.write(fig)
 
-
-    st.subheader("Users with Pending Chptr Requests")
-    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
-    users_pending_invites = users_pending_invites.reset_index(drop=True)
-    for i in range(len(users_pending_invites)):
-        user_id = users_pending_invites["User ID"][i]
-        user_name = users_pending_invites["User Name"][i]
-        for k in users_pending_invites["Pending Chptr Requests"][i]:
-            pending_chptr = k
-            tup = (user_id, user_name, pending_chptr)
-            l.append(tup)
-    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
-    st.write("Count of pending requests: ", len(users_pending))
-    users_pending = users_pending.sort_values("User ID")
-    users_pending = users_pending.reset_index(drop=True)
-    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
-    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
-    users_pending["Chptr Date"] = users_pending["Date"]
-    users_pending = users_pending.drop("Date", axis=1)
-    st.dataframe(users_pending)
 
     #count of users at each contribution level
     st.subheader("Count of Users by Contribution Number")
