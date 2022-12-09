@@ -51,6 +51,7 @@ def get_users():
         except TypeError:
             name = None
         pendingChptrRequests = users["pendingChptrRequests"][i]
+        count_pendingChptrRequests = len(pendingChptrRequests)
         email_allowed = users["allowsReceiveEmail"][i]
         state = users["state"][i]
         chptrIds = users["chptrIds"][i]
@@ -59,6 +60,7 @@ def get_users():
             user_id,
             name,
             pendingChptrRequests,
+            count_pendingChptrRequests,
             email_allowed,
             state,
             chptrIds,
@@ -68,7 +70,8 @@ def get_users():
     users_consolidated = pd.DataFrame(l,columns=["Selected Chptr ID",
                                                 "User ID",
                                                 "User Name",
-                                                "Pending Chapter Requests",
+                                                "Pending Chptr Requests",
+                                                "Count Pending Chptr Requests",
                                                 "Email Allowed",
                                                 "State",
                                                 "Chptr IDs",
