@@ -720,15 +720,13 @@ with tab3:
         
     st.subheader("Users with Pending Chptr Requests")
     users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
+    users_pending_invites = users_pending_invites[(users_pending_invites["Count Pending Chptr Requests"]!=None)]
     users_pending_invites = users_pending_invites.reset_index(drop=True)
     for i in range(len(users_pending_invites)):
-        if users_pending_invites["Pending Chptr Requests"][i]<>None:
-            user_id = users_pending_invites["User ID"][i]
-            user_name = users_pending_invites["User Name"][i]
-            for k in users_pending_invites["Pending Chptr Requests"][i]:
-                pending_chptr = k
-        else:
-            pass
+        user_id = users_pending_invites["User ID"][i]
+        user_name = users_pending_invites["User Name"][i]
+        for k in users_pending_invites["Pending Chptr Requests"][i]:
+            pending_chptr = k
             tup = (user_id, user_name, pending_chptr)
             l.append(tup)
     users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
