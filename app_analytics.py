@@ -642,6 +642,101 @@ with tab3:
         mime='text/csv',
         )
 
+
+    users_chptrs = chptrs.groupby("Chptr Owner").agg({"Chptr ID":"count"})
+    users_chptrs["Chptrs Created"] = users_chptrs["Chptr ID"]
+    users_chptrs = users_chptrs.drop("Chptr ID", axis=1)
+    users_chptrs = users_chptrs.rename_axis("User ID")
+    users_chptrs = users_chptrs.reset_index()
+    
+    l=[]
+    for i in range(len(contributors_list)):
+        user_id = contributors_list[i]
+        count = contributors_list.count(user_id)
+        tup = (user_id, count)
+        l.append(tup)
+    users_contributors = pd.DataFrame(l, columns=["User ID", "Chptrs as Contributor"])
+    users_contributors = users_contributors.drop_duplicates("User ID")
+    active_users = pd.merge(users_chptrs, users_contributors, how='outer', on="User ID")
+    for i in range(len(active_users)):
+        if pd.isna(active_users["Chptrs Created"][i]):
+            active_users["Chptrs Created"][i]=0
+
+    #kmeans for user activity
+    kmeans_active_users = active_users[["Chptrs Created", 'Chptrs as Contributor']]
+    kmeans_active_users_scaled = StandardScaler().fit_transform(kmeans_active_users)
+    kmeans_active_users_scaled = pd.DataFrame(kmeans_active_users_scaled, columns = kmeans_active_users.columns)
+
+    #kmeans clustering using latest contribution and count of total contributions
+    sse = []
+    for k in range(1, 11):
+        kmeans = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=10, random_state=42)
+        kmeans.fit(kmeans_active_users_scaled)
+        sse.append(kmeans.inertia_)
+    kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
+    n = kl.elbow
+    kmeans = KMeans(n_clusters=n, init='k-means++', max_iter=300, n_init=10, random_state=42)
+    pred_y = kmeans.fit_predict(kmeans_active_users_scaled)
+    kmeans_active_users['Classification'] = pd.Series(pred_y, index=kmeans_active_users.index)
+    active_users['Classification'] = pd.Series(pred_y, index=kmeans_active_users.index)
+    #chptrs_cohort_last = chptrs_cohort_last.drop("Days Between Contributions",axis=1)
+    #chptrs_cohort_last = chptrs_cohort_last.reset_index(drop=True)
+
+    fig = px.scatter(
+        x=active_users["Chptrs Created"],
+        y=active_users['Chptrs as Contributor'],
+        color=active_users['Classification']
+    )
+    fig.update_layout(
+        xaxis_title="Chptrs Created",
+        yaxis_title='Chptrs as Contributor',
+    )
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+
+    scatter = ax.scatter(
+        x=active_users["Chptrs Created"],
+        y=active_users['Chptrs as Contributor'],
+        c=active_users['Classification'],
+        label=active_users['Classification']
+    )
+
+    legend = ax.legend(*scatter.legend_elements(),
+                loc="lower right", title="User Cluster")
+
+    ax.set_xlabel("Chptrs Created")
+    ax.set_ylabel('Chptrs as Contributor')
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Clustering Users")
+        st.dataframe(active_users)
+
+    with col2:
+        st.write(fig)
+
+
+    st.subheader("Users with Pending Chptr Requests")
+    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
+    users_pending_invites = users_pending_invites.reset_index(drop=True)
+    for i in range(len(users_pending_invites)):
+        user_id = users_pending_invites["User ID"][i]
+        user_name = users_pending_invites["User Name"][i]
+        for k in users_pending_invites["Pending Chptr Requests"][i]:
+            pending_chptr = k
+            tup = (user_id, user_name, pending_chptr)
+            l.append(tup)
+    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
+    st.write("Count of pending requests: ", len(users_pending))
+    users_pending = users_pending.sort_values("User ID")
+    users_pending = users_pending.reset_index(drop=True)
+    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
+    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
+    users_pending["Chptr Date"] = users_pending["Date"]
+    users_pending = users_pending.drop("Date", axis=1)
+    st.dataframe(users_pending)
+
     #count of users at each contribution level
     st.subheader("Count of Users by Contribution Number")
     users_agg = users_with_contribution_count.groupby("Count of Contributions").agg({"Count of Contributions": 'count'})
