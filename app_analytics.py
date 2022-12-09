@@ -718,7 +718,7 @@ with tab3:
     with col2:
         st.write(fig)
     
-    st.subheader("Users with Pending Chptr Requests")
+    #st.subheader("Users with Pending Chptr Requests")
     users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
     users_pending_invites = users_pending_invites.reset_index(drop=True)
     for i in range(len(users_pending_invites)):
@@ -729,14 +729,14 @@ with tab3:
             tup = (user_id, user_name, pending_chptr)
             l.append(tup)
     users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
-    st.write("Count of pending requests: ", len(users_pending))
+    #st.write("Count of pending requests: ", len(users_pending))
     users_pending = users_pending.sort_values("User ID")
     users_pending = users_pending.reset_index(drop=True)
     users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
     users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
     users_pending["Chptr Date"] = users_pending["Date"]
     users_pending = users_pending.drop("Date", axis=1)
-    st.dataframe(users_pending)
+    #st.dataframe(users_pending)
 
 
     #count of users at each contribution level
