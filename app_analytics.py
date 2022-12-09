@@ -729,6 +729,7 @@ with tab3:
             tup = (user_id, user_name, pending_chptr)
             l.append(tup)
     users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
+    users_pending
     st.write("Count of pending requests: ", len(users_pending))
     users_pending = users_pending.sort_values("User ID")
     users_pending = users_pending.reset_index(drop=True)
