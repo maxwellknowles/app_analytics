@@ -397,7 +397,7 @@ with tab1:
     chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
     st.bar_chart(chptrs_ordered_publications)
     
-    st.subheader("Chptrs by Completion Characteristics) 
+    st.subheader("Chptrs by Completion Characteristics") 
     #chptrs with image
     chptrs_with_image = chptrs[(chptrs['Profile Image Present']==True)]
     count_chptrs_with_image = len(chptrs_with_image)
