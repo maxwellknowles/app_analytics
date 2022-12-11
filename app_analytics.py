@@ -4,31 +4,30 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db
 from firebase_admin import firestore
-from datetime import datetime
+from datetime import datetime, date
 from st_aggrid import AgGrid
 import streamlit as st
 from geopy.geocoders import Nominatim
 import statistics
 import numpy as np
 import altair as alt
-import ast
+import json
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from kneed import KneeLocator
 import matplotlib.pyplot as plt
+import plotly.express as px
 
 #page setup
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
 
-#JSON_DATA = {"key":st.secrets['google_key_file']}
-secret = str(st.secrets['google_key_file'])
-JSON_DATA = ast.literal_eval(secret)
+JSON_DATA = {'key':st.secrets['google_key_file']}
 
 #functions
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def connect_to_firestore():
     #connecting to firebase
-    cred = credentials.Certificate(JSON_DATA)
+    cred = credentials.Certificate(JSON_DATA["key"])
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://console.firebase.google.com/u/2/project/chptr-b101d/firestore/data'
     })
@@ -37,7 +36,7 @@ connect_to_firestore()
 db = firestore.client()
 
 #users collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=10800)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_users():
     users = list(db.collection(u'users').stream())
     users_dict = list(map(lambda x: x.to_dict(), users))
@@ -80,7 +79,7 @@ def get_users():
     return users_consolidated
 
 #chptrs collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=10800)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_chptrs():
     chptrs = list(db.collection(u'chptrs').stream())
     chptrs_dict = list(map(lambda x: x.to_dict(), chptrs))
@@ -107,6 +106,11 @@ def get_chptrs():
             lon = None
         description = chptrs['description'][i]
         length_description = len(chptrs['description'][i])
+        profile_image = chptrs['profileImageUrl'][i]
+        if profile_image != None:
+            profile_image_boolean = True
+        else:
+            profile_image_boolean = False
         pending_requests = chptrs['numberOfPendingRequests'][i]
         contributors = chptrs['contributors'][i]
         count_contributors = len(chptrs['contributors'][i])
@@ -120,6 +124,8 @@ def get_chptrs():
             lon,
             description,
             length_description,
+            profile_image,
+            profile_image_boolean,
             pending_requests,
             contributors,
             count_contributors)
@@ -134,13 +140,15 @@ def get_chptrs():
                                                 "Lon",
                                                 "Description",
                                                 "Length of Description",
+                                                "Profile Image URL",
+                                                "Profile Image Present",
                                                 "Pending Requests",
                                                 "Contributors",
                                                 "Number of Contributors"])
     return chptrs_consolidated
 
 #contributions collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=10800)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_contributions():
     contributions = list(db.collection(u'contributions').stream())
     contributions_dict = list(map(lambda x: x.to_dict(), contributions))
@@ -296,7 +304,7 @@ contributions_sorted = pd.merge(contributions_sorted, contributions_sorted_date,
 contributions_sorted = contributions_sorted.drop_duplicates(["Date"])
 contributions_sorted = contributions_sorted.reset_index(drop=True)
 
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=10800)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=6000)
 def get_comments():
     l=[]
     for i in range(len(contributions)):
@@ -385,6 +393,55 @@ with tab1:
     chptrs_ordered_publications["Chptrs"] = chptrs_ordered_publications["Month"]
     chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
     st.bar_chart(chptrs_ordered_publications)
+
+    #chptrs with image
+    chptrs_with_image = chptrs[(chptrs['Profile Image Present']==True)]
+    count_chptrs_with_image = len(chptrs_with_image)
+    count_chptrs_with_image_contributors = (statistics.mean(chptrs_with_image["Number of Contributors"]))
+    st.write("Chptrs with profile image: ", count_chptrs_with_image)
+
+    #chptrs with dates
+    chptrs_with_dates = chptrs[(chptrs['Birthday'].notnull())]
+    count_chptrs_with_dates = len(chptrs_with_dates)
+    count_chptrs_with_dates_contributors = (statistics.mean(chptrs_with_dates["Number of Contributors"]))
+    st.write("Chptrs with birthday: ", count_chptrs_with_dates)
+
+    #chptrs with locations
+    chptrs_with_locations = chptrs[(chptrs['Location']!="")]
+    count_chptrs_with_locations = len(chptrs_with_locations)
+    count_chptrs_with_locations_contributors = (statistics.mean(chptrs_with_locations["Number of Contributors"]))
+    st.write("Chptrs with location: ", count_chptrs_with_locations)
+
+    #chptrs with locations
+    chptrs_with_locations_and_dates = chptrs_with_locations[(chptrs_with_locations['Birthday'].notnull())]
+    count_chptrs_with_locations_and_dates = len(chptrs_with_locations_and_dates)
+    count_chptrs_with_locations_and_dates_contributors = (statistics.mean(chptrs_with_locations_and_dates["Number of Contributors"]))
+    st.write("Chptrs with location and birthday: ", count_chptrs_with_locations_and_dates)
+
+    #chptrs with description
+    chptrs_with_descriptions = chptrs[(chptrs['Length of Description']>0)]
+    count_chptrs_with_descriptions = len(chptrs_with_descriptions)
+    count_chptrs_with_descriptions_contributors = (statistics.mean(chptrs_with_descriptions["Number of Contributors"]))
+    st.write("Chptrs with description: ", count_chptrs_with_descriptions)
+
+
+    #chptrs with more than 1 contributor
+    chptrs_with_multiple_contributors = chptrs[(chptrs['Number of Contributors']>1)]
+    count_chptrs_with_multiple_contributors = len(chptrs_with_multiple_contributors)
+    count_chptrs_with_multiple_contributors_contributors = (statistics.mean(chptrs_with_multiple_contributors["Number of Contributors"]))
+    #st.write("Chptrs with more than 1 contributor: ", count_chptrs_with_multiple_contributors)
+    
+    chptr_types = ["Chptrs with Dates", "Chptrs with Locations", "Chptrs with Descriptions", "Chptrs with Profile Image", "All"]
+    chptr_counts = [count_chptrs_with_dates, count_chptrs_with_locations, count_chptrs_with_descriptions, count_chptrs_with_image, len(chptrs)]
+    chptr_contributors = [count_chptrs_with_dates_contributors, count_chptrs_with_locations_contributors, count_chptrs_with_descriptions_contributors, count_chptrs_with_image_contributors, statistics.mean(chptrs["Number of Contributors"])]
+    d = {"Chptrs Type":chptr_types, "Type Count":chptr_counts, "Type Contributors":chptr_contributors}
+    chptrs_analysis = pd.DataFrame(d)
+    chptrs_analysis
+
+    c = alt.Chart(chptrs_analysis).mark_circle().encode(
+    x='Type Count', y='Type Contributors', size='Type Count', color='Chptrs Type', tooltip=['Chptrs Type', 'Type Count', 'Type Contributors'])
+
+    st.altair_chart(c, use_container_width=True)
 
     chptrs_passing_data = chptrs_ordered[["Chptr ID", "Birthday","Passing Date", "Date"]]
     chptrs_passing_data = chptrs_passing_data[chptrs_passing_data['Passing Date'].notna()]
@@ -507,8 +564,6 @@ with tab2:
     chptrs_cohort_last = chptrs_cohort_last.drop("Days Between Contributions",axis=1)
     chptrs_cohort_last = chptrs_cohort_last.reset_index(drop=True)
 
-    import plotly.express as px
-
     fig = px.scatter(
         x=kmeans_chptrs["Days Between First and Last"],
         y=kmeans_chptrs['Count of Contributions'],
@@ -598,7 +653,29 @@ with tab2:
     chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
     st.bar_chart(chptrs_ordered_description)
 
+l=[]
+
 with tab3:
+    st.subheader("Users with Pending Chptr Requests")
+    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
+    users_pending_invites = users_pending_invites.reset_index(drop=True)
+    for i in range(len(users_pending_invites)):
+        user_id = users_pending_invites["User ID"][i]
+        user_name = users_pending_invites["User Name"][i]
+        for k in users_pending_invites["Pending Chptr Requests"][i]:
+            pending_chptr = k
+            tup = (user_id, user_name, pending_chptr)
+            l.append(tup)
+    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
+    st.write("Count of pending requests: ", len(users_pending))
+    users_pending = users_pending.sort_values("User ID")
+    users_pending = users_pending.reset_index(drop=True)
+    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
+    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
+    users_pending["Chptr Date"] = users_pending["Date"]
+    users_pending = users_pending.drop("Date", axis=1)
+    st.dataframe(users_pending)
+
     st.subheader("Users without a chptr or contribution")
     owners_list = []
     contributors_list = []
@@ -717,26 +794,6 @@ with tab3:
 
     with col2:
         st.write(fig)
-    
-    #st.subheader("Users with Pending Chptr Requests")
-    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
-    users_pending_invites = users_pending_invites.reset_index(drop=True)
-    for i in range(len(users_pending_invites)):
-        user_id = users_pending_invites["User ID"][i]
-        user_name = users_pending_invites["User Name"][i]
-        for k in users_pending_invites["Pending Chptr Requests"][i]:
-            pending_chptr = k
-            tup = (user_id, user_name, pending_chptr)
-            l.append(tup)
-    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
-    #st.write("Count of pending requests: ", len(users_pending))
-    users_pending = users_pending.sort_values("User ID")
-    users_pending = users_pending.reset_index(drop=True)
-    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
-    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
-    users_pending["Chptr Date"] = users_pending["Date"]
-    users_pending = users_pending.drop("Date", axis=1)
-    #st.dataframe(users_pending)
 
 
     #count of users at each contribution level
