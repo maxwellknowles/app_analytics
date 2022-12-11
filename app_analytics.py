@@ -17,6 +17,7 @@ from sklearn.preprocessing import StandardScaler
 from kneed import KneeLocator
 import matplotlib.pyplot as plt
 import plotly.express as px
+import ast
 
 #page setup
 st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="wide",initial_sidebar_state="expanded")
