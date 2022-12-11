@@ -447,6 +447,7 @@ with tab1:
 
     st.altair_chart(c, use_container_width=True)
 
+    #getting birthday and passing date data
     chptrs_passing_data = chptrs_ordered[["Chptr ID", "Birthday","Passing Date", "Date"]]
     chptrs_passing_data = chptrs_passing_data[chptrs_passing_data['Passing Date'].notna()]
     chptrs_passing_data = chptrs_passing_data[chptrs_passing_data['Date'].notna()]
@@ -454,15 +455,19 @@ with tab1:
     passing_delta = []
     for i in range(len(chptrs_passing_data)):
         chptr_id=chptrs_passing_data["Chptr ID"][i]
+        birth_date=str(chptrs_passing_data["Birthday"][i]).split("T")[0]
+        birth_date=datetime.strptime(birth_date, '%Y-%m-%d').year
         passing_date=str(chptrs_passing_data["Passing Date"][i]).split("T")[0]
         passing_date=datetime.strptime(passing_date, '%Y-%m-%d').year
+        age=passing_date-birth_date
         chptr_date=str(chptrs_passing_data["Date"][i]).split("T")[0]
         chptr_date = datetime.strptime(chptr_date, '%Y-%m-%d').year
         delta=chptr_date-passing_date
-        tup=(chptr_id, delta)
+        tup=(chptr_id, age, delta)
         passing_delta.append(tup)
-    chptrs_passing=pd.DataFrame(passing_delta, columns=['Chptr ID', "Years Passed Before Chptr Creation"])
+    chptrs_passing=pd.DataFrame(passing_delta, columns=['Chptr ID', "Age", "Years Passed Before Chptr Creation"])
     chptrs_passing=chptrs_passing[(chptrs_passing["Years Passed Before Chptr Creation"]>=0)]
+    chptrs_passing=chptrs_passing[(chptrs_passing["Age"]<111)]
     
     chptrs_agg = chptrs_passing.groupby("Years Passed Before Chptr Creation").agg({"Years Passed Before Chptr Creation": 'count'})
     chptrs_agg["Count of Chptrs"] = chptrs_agg["Years Passed Before Chptr Creation"]
@@ -473,6 +478,18 @@ with tab1:
         x="Years Passed Before Chptr Creation", y="Count of Chptrs", size="Count of Chptrs", color="Count of Chptrs", tooltip=["Years Passed Before Chptr Creation", "Count of Chptrs"])
 
     st.subheader("Chptr Count and Years Relative to Passing")
+    st.altair_chart(c, use_container_width=True)
+
+    chptrs_age = chptrs_passing.groupby("Age").agg({"Chptr ID": 'count'})
+    chptrs_age["Count of Chptrs"] = chptrs_age["Chptr ID"]
+    chptrs_age = chptrs_age.drop("Chptr ID", axis=1)
+    chptrs_age = chptrs_age.rename_axis("Age")
+    chptrs_age = chptrs_age.reset_index()
+
+    c = alt.Chart(chptrs_age).mark_circle().encode(
+        x="Age", y="Count of Chptrs", size="Count of Chptrs", color="Count of Chptrs", tooltip=["Age", "Count of Chptrs"])
+
+    st.subheader("Chptr Count and Age of Tributee")
     st.altair_chart(c, use_container_width=True)
 
     #graph of locations
