@@ -396,51 +396,40 @@ with tab1:
     chptrs_ordered_publications["Chptrs"] = chptrs_ordered_publications["Month"]
     chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
     st.bar_chart(chptrs_ordered_publications)
-    
-    st.subheader("Chptrs by Completion Characteristics") 
+
+    st.subheader("Chptrs by Completion Characteristics")
+
     #chptrs with image
     chptrs_with_image = chptrs[(chptrs['Profile Image Present']==True)]
     count_chptrs_with_image = len(chptrs_with_image)
     count_chptrs_with_image_contributors = (statistics.mean(chptrs_with_image["Number of Contributors"]))
-    st.write("Chptrs with profile image: ", count_chptrs_with_image)
 
     #chptrs with dates
     chptrs_with_dates = chptrs[(chptrs['Birthday'].notnull())]
     count_chptrs_with_dates = len(chptrs_with_dates)
     count_chptrs_with_dates_contributors = (statistics.mean(chptrs_with_dates["Number of Contributors"]))
-    st.write("Chptrs with birthday: ", count_chptrs_with_dates)
 
     #chptrs with locations
     chptrs_with_locations = chptrs[(chptrs['Location']!="")]
     count_chptrs_with_locations = len(chptrs_with_locations)
     count_chptrs_with_locations_contributors = (statistics.mean(chptrs_with_locations["Number of Contributors"]))
-    st.write("Chptrs with location: ", count_chptrs_with_locations)
 
     #chptrs with locations
     chptrs_with_locations_and_dates = chptrs_with_locations[(chptrs_with_locations['Birthday'].notnull())]
     count_chptrs_with_locations_and_dates = len(chptrs_with_locations_and_dates)
     count_chptrs_with_locations_and_dates_contributors = (statistics.mean(chptrs_with_locations_and_dates["Number of Contributors"]))
-    st.write("Chptrs with location and birthday: ", count_chptrs_with_locations_and_dates)
 
     #chptrs with description
     chptrs_with_descriptions = chptrs[(chptrs['Length of Description']>0)]
     count_chptrs_with_descriptions = len(chptrs_with_descriptions)
     count_chptrs_with_descriptions_contributors = (statistics.mean(chptrs_with_descriptions["Number of Contributors"]))
-    st.write("Chptrs with description: ", count_chptrs_with_descriptions)
-
-
-    #chptrs with more than 1 contributor
-    chptrs_with_multiple_contributors = chptrs[(chptrs['Number of Contributors']>1)]
-    count_chptrs_with_multiple_contributors = len(chptrs_with_multiple_contributors)
-    count_chptrs_with_multiple_contributors_contributors = (statistics.mean(chptrs_with_multiple_contributors["Number of Contributors"]))
-    #st.write("Chptrs with more than 1 contributor: ", count_chptrs_with_multiple_contributors)
     
     chptr_types = ["Chptrs with Dates", "Chptrs with Locations", "Chptrs with Descriptions", "Chptrs with Profile Image", "All"]
     chptr_counts = [count_chptrs_with_dates, count_chptrs_with_locations, count_chptrs_with_descriptions, count_chptrs_with_image, len(chptrs)]
     chptr_contributors = [count_chptrs_with_dates_contributors, count_chptrs_with_locations_contributors, count_chptrs_with_descriptions_contributors, count_chptrs_with_image_contributors, statistics.mean(chptrs["Number of Contributors"])]
     d = {"Chptrs Type":chptr_types, "Type Count":chptr_counts, "Type Contributors":chptr_contributors}
     chptrs_analysis = pd.DataFrame(d)
-    chptrs_analysis
+    st.dataframe(chptrs_analysis)
 
     c = alt.Chart(chptrs_analysis).mark_circle().encode(
     x='Type Count', y='Type Contributors', size='Type Count', color='Chptrs Type', tooltip=['Chptrs Type', 'Type Count', 'Type Contributors'])
@@ -478,6 +467,7 @@ with tab1:
         x="Years Passed Before Chptr Creation", y="Count of Chptrs", size="Count of Chptrs", color="Count of Chptrs", tooltip=["Years Passed Before Chptr Creation", "Count of Chptrs"])
 
     st.subheader("Chptr Count and Years Relative to Passing")
+    st.metric("Average Years After Passing", round(statistics.mean(chptrs_passing["Years Passed Before Chptr Creation"]),2))
     st.altair_chart(c, use_container_width=True)
 
     chptrs_age = chptrs_passing.groupby("Age").agg({"Chptr ID": 'count'})
@@ -490,6 +480,7 @@ with tab1:
         x="Age", y="Count of Chptrs", size="Count of Chptrs", color="Count of Chptrs", tooltip=["Age", "Count of Chptrs"])
 
     st.subheader("Chptr Count and Age of Tributee")
+    st.metric("Average Age", round(statistics.mean(chptrs_passing["Age"]),2))
     st.altair_chart(c, use_container_width=True)
 
     #graph of locations
@@ -613,8 +604,7 @@ with tab2:
 
     col1, col2 = st.columns(2)
     with col1:
-        st.write("**Average Days Between Last and First Contribution:** ", str(round(sum(chptrs_cohort_last["Days Between First and Last"])/len(chptrs_cohort_last),2)))
-
+        st.metric("Average Days Between Last and First Contribution", str(round(sum(chptrs_cohort_last["Days Between First and Last"])/len(chptrs_cohort_last),2)))
         st.dataframe(chptrs_cohort_last)
 
         chptrs_cohort_csv = convert_df(chptrs_cohort)
@@ -646,13 +636,13 @@ with tab2:
     days_since_latest_contribution = pd.DataFrame(l, columns=["Chptr ID", "Chptr Name", "Latest Contribution", "Days Since"]) 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.write("3 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>3)]))
+        st.metric("3 or more days since a contribution", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>3)]))
     with col2:
-        st.write("7 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>7)]))
+        st.metric("7 or more days since a contribution", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>7)]))
     with col3:
-        st.write("30 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>30)]))
+        st.metric("30 or more days since a contribution", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>30)]))
     with col4:
-        st.write("90 or more days since a contribution:", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>90)]))
+        st.metric("90 or more days since a contribution", len(days_since_latest_contribution[(days_since_latest_contribution["Days Since"]>90)]))
 
     st.dataframe(days_since_latest_contribution)
 
@@ -685,14 +675,15 @@ with tab3:
         user_name = users_pending_invites["User Name"][i]
         for k in users_pending_invites["Pending Chptr Requests"][i]:
             pending_chptr = k
-            tup = (user_id, user_name, pending_chptr)
+            pending_chptr_invite = "https://chptrprod.page.link?amv=0&apn=com.chptr.chptr&ibi=com.chptr.chptr&imv=0&isi=1620239435&link=https%3A%2F%2Fchptrprod.page.link%2Fview%3FchptrID%3D"+pending_chptr
+            tup = (user_id, user_name, pending_chptr, pending_chptr_invite)
             l.append(tup)
-    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr"])
+    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr", "Invitation Link"])
     st.write("Count of pending requests: ", len(users_pending))
     users_pending = users_pending.sort_values("User ID")
     users_pending = users_pending.reset_index(drop=True)
     users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
-    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Date"]]
+    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Invitation Link", "Date"]]
     users_pending["Chptr Date"] = users_pending["Date"]
     users_pending = users_pending.drop("Date", axis=1)
     st.dataframe(users_pending)
