@@ -477,7 +477,7 @@ with tab1:
                             count_chptrs_with_image_contributions,
                             count_chptrs_all_contributions,
                             statistics.mean(chptrs["Number of Contributions"])]
-    chptr_contributions_per = [count_chptrs_with_image_contributions_per,
+    chptr_contributions_per = [count_chptrs_with_dates_contributions_per,
                                 count_chptrs_with_locations_contributions_per,
                                 count_chptrs_with_descriptions_contributions_per, 
                                 count_chptrs_with_image_contributions_per,
