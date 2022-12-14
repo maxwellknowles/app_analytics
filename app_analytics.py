@@ -399,40 +399,89 @@ with tab1:
 
     st.subheader("Chptrs by Completion Characteristics")
 
+    chptrs_contributions = contributions.groupby("Chptr ID").agg({"Contribution ID": 'count'})
+    chptrs_contributions = chptrs_contributions.rename_axis('Chptr ID')
+    chptrs_contributions["Number of Contributions"] = chptrs_contributions["Contribution ID"]
+    chptrs_contributions = chptrs_contributions.drop("Contribution ID", axis=1)
+    chptrs = pd.merge(chptrs, chptrs_contributions, how='inner', on = 'Chptr ID')
+    chptrs["Contributions per Contributor"] = chptrs["Number of Contributions"]/chptrs["Number of Contributors"]
+
     #chptrs with image
     chptrs_with_image = chptrs[(chptrs['Profile Image Present']==True)]
     count_chptrs_with_image = len(chptrs_with_image)
     count_chptrs_with_image_contributors = (statistics.mean(chptrs_with_image["Number of Contributors"]))
+    count_chptrs_with_image_contributions = (statistics.mean(chptrs_with_image["Number of Contributions"]))
+    count_chptrs_with_image_contributions_per = (statistics.mean(chptrs_with_image["Contributions per Contributor"]))
 
     #chptrs with dates
     chptrs_with_dates = chptrs[(chptrs['Birthday'].notnull())]
     count_chptrs_with_dates = len(chptrs_with_dates)
     count_chptrs_with_dates_contributors = (statistics.mean(chptrs_with_dates["Number of Contributors"]))
+    count_chptrs_with_dates_contributions = (statistics.mean(chptrs_with_dates["Number of Contributions"]))
+    count_chptrs_with_dates_contributions_per = (statistics.mean(chptrs_with_dates["Contributions per Contributor"]))
 
     #chptrs with locations
     chptrs_with_locations = chptrs[(chptrs['Location']!="")]
     count_chptrs_with_locations = len(chptrs_with_locations)
     count_chptrs_with_locations_contributors = (statistics.mean(chptrs_with_locations["Number of Contributors"]))
+    count_chptrs_with_locations_contributions = (statistics.mean(chptrs_with_locations["Number of Contributions"]))
+    count_chptrs_with_locations_contributions_per = (statistics.mean(chptrs_with_locations["Contributions per Contributor"]))
 
-    #chptrs with locations
+    #chptrs with locations and dates
     chptrs_with_locations_and_dates = chptrs_with_locations[(chptrs_with_locations['Birthday'].notnull())]
     count_chptrs_with_locations_and_dates = len(chptrs_with_locations_and_dates)
     count_chptrs_with_locations_and_dates_contributors = (statistics.mean(chptrs_with_locations_and_dates["Number of Contributors"]))
+    count_chptrs_with_locations_and_dates_contributions = (statistics.mean(chptrs_with_locations_and_dates["Number of Contributions"]))
+    count_chptrs_with_locations_and_dates_contributions_per = (statistics.mean(chptrs_with_locations_and_dates["Contributions per Contributor"]))
 
-    #chptrs with description
+    #chptrs with descriptions
     chptrs_with_descriptions = chptrs[(chptrs['Length of Description']>0)]
     count_chptrs_with_descriptions = len(chptrs_with_descriptions)
     count_chptrs_with_descriptions_contributors = (statistics.mean(chptrs_with_descriptions["Number of Contributors"]))
-    
-    chptr_types = ["Chptrs with Dates", "Chptrs with Locations", "Chptrs with Descriptions", "Chptrs with Profile Image", "All"]
-    chptr_counts = [count_chptrs_with_dates, count_chptrs_with_locations, count_chptrs_with_descriptions, count_chptrs_with_image, len(chptrs)]
-    chptr_contributors = [count_chptrs_with_dates_contributors, count_chptrs_with_locations_contributors, count_chptrs_with_descriptions_contributors, count_chptrs_with_image_contributors, statistics.mean(chptrs["Number of Contributors"])]
-    d = {"Chptrs Type":chptr_types, "Type Count":chptr_counts, "Type Contributors":chptr_contributors}
+    count_chptrs_with_descriptions_contributions = (statistics.mean(chptrs_with_descriptions["Number of Contributions"]))
+    count_chptrs_with_descriptions_contributions_per = (statistics.mean(chptrs_with_descriptions["Contributions per Contributor"]))
+
+    #chptrs with everything
+    chptrs_all = chptrs[(chptrs['Length of Description']>0)]
+    chptrs_all = chptrs_all[(chptrs_all['Location']!="")]
+    chptrs_all = chptrs_all[(chptrs_all['Birthday'].notnull())]
+    chptrs_all = chptrs_all[(chptrs_all['Profile Image Present']==True)]
+    count_chptrs_all = len(chptrs_all)
+    count_chptrs_all_contributors = (statistics.mean(chptrs_all["Number of Contributors"]))
+    count_chptrs_all_contributions = (statistics.mean(chptrs_all["Number of Contributions"]))
+    count_chptrs_all_contributions_per = (statistics.mean(chptrs_all["Contributions per Contributor"]))
+
+    chptr_types = ["Chptrs with Dates", "Chptrs with Locations", "Chptrs with Descriptions", "Chptrs with Profile Image", "Chptrs with All Attributes", "All"]
+    chptr_counts = [count_chptrs_with_dates, 
+                    count_chptrs_with_locations, 
+                    count_chptrs_with_descriptions, 
+                    count_chptrs_with_image, 
+                    count_chptrs_all,
+                    len(chptrs)]
+    chptr_contributors = [count_chptrs_with_dates_contributors, 
+                            count_chptrs_with_locations_contributors, 
+                            count_chptrs_with_descriptions_contributors, 
+                            count_chptrs_with_image_contributors, 
+                            count_chptrs_all_contributors,
+                            statistics.mean(chptrs["Number of Contributors"])]
+    chptr_contributions = [count_chptrs_with_dates_contributions,
+                            count_chptrs_with_locations_contributions,
+                            count_chptrs_with_descriptions_contributions, 
+                            count_chptrs_with_image_contributions,
+                            count_chptrs_all_contributions,
+                            statistics.mean(chptrs["Number of Contributions"])]
+    chptr_contributions_per = [count_chptrs_with_image_contributions_per,
+                                count_chptrs_with_locations_contributions_per,
+                                count_chptrs_with_descriptions_contributions_per, 
+                                count_chptrs_with_image_contributions_per,
+                                count_chptrs_all_contributions_per,
+                            statistics.mean(chptrs["Contributions per Contributor"])]
+    d = {"Chptrs Type":chptr_types, "Type Count":chptr_counts, "Type Contributors":chptr_contributors, "Type Contributions": chptr_contributions, "Type Contributions Per Contributor":chptr_contributions_per}
     chptrs_analysis = pd.DataFrame(d)
     st.dataframe(chptrs_analysis)
 
     c = alt.Chart(chptrs_analysis).mark_circle().encode(
-    x='Type Count', y='Type Contributors', size='Type Count', color='Chptrs Type', tooltip=['Chptrs Type', 'Type Count', 'Type Contributors'])
+    x='Type Contributions', y='Type Contributors', size='Type Count', color='Chptrs Type', tooltip=['Chptrs Type', 'Type Count', 'Type Contributors', 'Type Contributions', 'Type Contributions Per Contributor'])
 
     st.altair_chart(c, use_container_width=True)
 
