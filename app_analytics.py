@@ -397,8 +397,6 @@ with tab1:
     chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
     st.bar_chart(chptrs_ordered_publications)
 
-    st.subheader("Chptrs by Completion Characteristics")
-
     chptrs_contributions = contributions.groupby("Chptr ID").agg({"Contribution ID": 'count'})
     chptrs_contributions = chptrs_contributions.rename_axis('Chptr ID')
     chptrs_contributions["Number of Contributions"] = chptrs_contributions["Contribution ID"]
@@ -450,7 +448,16 @@ with tab1:
     count_chptrs_all_contributors = (statistics.mean(chptrs_all["Number of Contributors"]))
     count_chptrs_all_contributions = (statistics.mean(chptrs_all["Number of Contributions"]))
     count_chptrs_all_contributions_per = (statistics.mean(chptrs_all["Contributions per Contributor"]))
+    
+    st.subheader("Chptrs with descriptions, birthdays, profile images, and locations")
+    chptrs_all = pd.merge(chptrs_all, chptrs_ordered, how="inner", on="Chptr ID")
+    chptrs_all = chptrs_all.groupby("Month").agg({"Month": 'count'})
+    chptrs_all = chptrs_all.rename_axis('Month Number')
+    chptrs_all["Chptrs"] = chptrs_all["Month"]
+    chptrs_all = chptrs_all.drop("Month", axis=1)
+    st.bar_chart(chptrs_all)
 
+    st.subheader("Chptrs by Completion Characteristics")
     chptr_types = ["Chptrs with Dates", "Chptrs with Locations", "Chptrs with Descriptions", "Chptrs with Profile Image", "Chptrs with All Attributes", "All"]
     chptr_counts = [count_chptrs_with_dates, 
                     count_chptrs_with_locations, 
