@@ -95,18 +95,18 @@ def get_chptrs():
         birthday = chptrs['birthday'][i]
         passing_date = chptrs['passingDate'][i]
         location = chptrs['location'][i]
-        if len(location)>0:
-            try:
-                geolocator = Nominatim(user_agent="Chptr")
-                city = geolocator.geocode(location)
-                lat = city.latitude
-                lon = city.longitude
-            except:
-                lat = None
-                lon = None
-        else:
-            lat = None
-            lon = None
+        #if len(location)>0:
+        #    try:
+        #        geolocator = Nominatim(user_agent="Chptr")
+        #        city = geolocator.geocode(location)
+        #        lat = city.latitude
+        #        lon = city.longitude
+        #    except:
+        #        lat = None
+        #        lon = None
+        #else:
+        #    lat = None
+        #    lon = None
         description = chptrs['description'][i]
         length_description = len(chptrs['description'][i])
         profile_image = chptrs['profileImageUrl'][i]
@@ -123,8 +123,8 @@ def get_chptrs():
             birthday,
             passing_date,
             location,
-            lat,
-            lon,
+            #lat,
+            #lon,
             description,
             length_description,
             profile_image,
@@ -139,8 +139,8 @@ def get_chptrs():
                                                 "Birthday",
                                                 "Passing Date",
                                                 "Location",
-                                                "Lat",
-                                                "Lon",
+                                                #"Lat",
+                                                #"Lon",
                                                 "Description",
                                                 "Length of Description",
                                                 "Profile Image URL",
@@ -484,12 +484,12 @@ with tab1:
     st.altair_chart(c, use_container_width=True)
 
     #graph of locations
-    st.subheader("Chptrs by City")
-    chptrs_lat_lon = chptrs[['Lat','Lon']]
-    chptrs_lat_lon=chptrs_lat_lon[chptrs_lat_lon.Lat.notnull()]
-    chptrs_lat_lon['lat']=chptrs_lat_lon['Lat']
-    chptrs_lat_lon['lon']=chptrs_lat_lon['Lon']
-    st.map(chptrs_lat_lon)
+    #st.subheader("Chptrs by City")
+    #chptrs_lat_lon = chptrs[['Lat','Lon']]
+    #chptrs_lat_lon=chptrs_lat_lon[chptrs_lat_lon.Lat.notnull()]
+    #chptrs_lat_lon['lat']=chptrs_lat_lon['Lat']
+    #chptrs_lat_lon['lon']=chptrs_lat_lon['Lon']
+    #st.map(chptrs_lat_lon)
 
 with tab2:
     #contributions per chptr over time
