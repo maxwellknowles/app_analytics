@@ -450,12 +450,12 @@ with tab1:
     count_chptrs_all_contributions_per = (statistics.mean(chptrs_all["Contributions per Contributor"]))
     
     st.subheader("Chptrs with descriptions, birthdays, profile images, and locations")
-    chptrs_all = pd.merge(chptrs_all, chptrs_ordered, how="inner", on="Chptr ID")
-    chptrs_all = chptrs_all.groupby("Month").agg({"Month": 'count'})
-    chptrs_all = chptrs_all.rename_axis('Month Number')
-    chptrs_all["Chptrs"] = chptrs_all["Month"]
-    chptrs_all = chptrs_all.drop("Month", axis=1)
-    st.bar_chart(chptrs_all)
+    chptrs_all_graph = pd.merge(chptrs_all, chptrs_ordered, how="inner", on="Chptr ID")
+    chptrs_all_graph = chptrs_all_graph.groupby("Month").agg({"Month": 'count'})
+    chptrs_all_graph = chptrs_all_graph.rename_axis('Month Number')
+    chptrs_all_graph["Chptrs"] = chptrs_all_graph["Month"]
+    chptrs_all_graph = chptrs_all_graph.drop("Month", axis=1)
+    st.bar_chart(chptrs_all_graph)
 
     st.subheader("Chptrs by Completion Characteristics")
     chptr_types = ["Chptrs with Dates", "Chptrs with Locations", "Chptrs with Descriptions", "Chptrs with Profile Image", "Chptrs with All Attributes", "All"]
@@ -491,6 +491,19 @@ with tab1:
     x='Type Contributions', y='Type Contributors', size='Type Count', color='Chptrs Type', tooltip=['Chptrs Type', 'Type Count', 'Type Contributors', 'Type Contributions', 'Type Contributions Per Contributor'])
 
     st.altair_chart(c, use_container_width=True)
+
+    chptrs_all = pd.merge(chptrs_all, users, how="inner", left_on="Chptr Owner", right_on="User ID")
+    chptrs_all_select = chptrs_all[["Chptr ID", "Name", "User Name"]]
+    st.write("**Top-Cluster Chptrs & Owners**")
+    st.dataframe(chptrs_all_select)
+    chptrs_all_select_csv = convert_df(chptrs_all_select)
+
+    st.download_button(
+        label="Download",
+        data=chptrs_all_select_csv,
+        file_name='most_complete_chptrs.csv',
+        mime='text/csv',
+        )
 
     #getting birthday and passing date data
     chptrs_passing_data = chptrs_ordered[["Chptr ID", "Birthday","Passing Date", "Date"]]
@@ -548,11 +561,21 @@ with tab1:
     #st.map(chptrs_lat_lon)
 
 with tab2:
-    #contributions per chptr over time
+    #contributors per chptr over time
     st.subheader("Avg Count of Contributors per Chptr by Month")
     chptrs_ordered_contributors = chptrs_ordered[["Month","Count Contributors"]]
     chptrs_ordered_contributors = chptrs_ordered_contributors.groupby("Month").agg({"Count Contributors": 'mean'})
     st.bar_chart(chptrs_ordered_contributors)
+
+    #contributions per chptr over time
+    st.subheader("Avg Count of Contributions per Contributor by Month")
+    chptrs_all_contributions = pd.merge(chptrs_all, contributions, how="inner", on="Chptr ID")
+    chptrs_all_contributions = chptrs_all_contributions.sort_values("Date", ascending=False)
+    chptrs_all_contributions = chptrs_all_contributions.drop_duplicates("Chptr ID")
+    chptrs_all_contributions = chptrs_all_contributions.reset_index(drop=True)
+    chptrs_all_contributions = chptrs_all_contributions[["Month","Contributions per Contributor"]]
+    chptrs_all_contributions = chptrs_all_contributions.groupby("Month").agg({"Contributions per Contributor": 'mean'})
+    st.bar_chart(chptrs_all_contributions)
 
     st.subheader("Engagement Span of Chptr Contribution")
     #sorting contributions by Chptr ID and date of contributions, getting the latest contribution for each
