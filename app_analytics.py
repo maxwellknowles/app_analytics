@@ -83,6 +83,8 @@ def get_users():
 
 #chptrs collection to dataframe
 @st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
+#chptrs collection to dataframe
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_chptrs():
     chptrs = list(db.collection(u'chptrs').stream())
     chptrs_dict = list(map(lambda x: x.to_dict(), chptrs))
@@ -117,6 +119,7 @@ def get_chptrs():
         pending_requests = chptrs['numberOfPendingRequests'][i]
         contributors = chptrs['contributors'][i]
         count_contributors = len(chptrs['contributors'][i])
+        deep_link = "https://chptrprod.page.link?amv=0&apn=com.chptr.chptr&ibi=com.chptr.chptr&imv=0&isi=1620239435&link=https%3A%2F%2Fchptrprod.page.link%2Fview%3FchptrID%3D"+chptrId
         tup = (chptrId, 
             owner,
             chptr_name,
@@ -131,7 +134,8 @@ def get_chptrs():
             profile_image_boolean,
             pending_requests,
             contributors,
-            count_contributors)
+            count_contributors,
+            deep_link)
         l.append(tup)
     chptrs_consolidated = pd.DataFrame(l,columns=["Chptr ID",
                                                 "Chptr Owner",
@@ -147,7 +151,8 @@ def get_chptrs():
                                                 "Profile Image Present",
                                                 "Pending Requests",
                                                 "Contributors",
-                                                "Number of Contributors"])
+                                                "Number of Contributors",
+                                                "Deep Link"])
     return chptrs_consolidated
 
 #contributions collection to dataframe
@@ -164,6 +169,7 @@ def get_contributions():
         date = contributions['creationDate'][i]
         date_split = date.split("T")[0]
         month = datetime.strptime(date_split, '%Y-%m-%d').month
+        date_day = datetime.strptime(date_split, '%Y-%m-%d')
         description = contributions['description'][i]
         description_length = len(contributions['description'][i])
         owner = contributions['owner'][i]['name']
@@ -177,11 +183,18 @@ def get_contributions():
         comments = contributions['amountOfComments'][i]
         likes = contributions['userLikesIds'][i]
         count_likes = len(contributions['userLikesIds'][i])
+        if contributions['mediaType'][i] == "image":
+            content = contributions['mediaUrl'][i]
+        elif contributions['mediaType'][i] == "video":
+            content = contributions['muxPlaybackURL'][i]
+        elif contributions['mediaType'][i] == "":
+            content = None
         tup = (contribution_id,
             chptrId, 
             chptr_name, 
             date, 
             month,
+            date_day,
             description, 
             description_length,
             owner,
@@ -191,13 +204,15 @@ def get_contributions():
             count_categories,
             comments, 
             likes,
-            count_likes)
+            count_likes,
+            content)
         l.append(tup)
         contributions_consolidated = pd.DataFrame(l,columns=["Contribution ID",
                                                             "Chptr ID", 
                                                             "Chptr Name", 
                                                             "Date", 
                                                             "Month",
+                                                            "Day",
                                                             "Description", 
                                                             "Length of Description",
                                                             "Owner", 
@@ -207,7 +222,8 @@ def get_contributions():
                                                             "Count Categories",
                                                             "Comments",
                                                             "Likes",
-                                                            "Count Likes"])
+                                                            "Count Likes",
+                                                            "Content"])
     return contributions_consolidated
 
 #get data
