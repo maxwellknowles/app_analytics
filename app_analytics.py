@@ -39,7 +39,7 @@ connect_to_firestore()
 db = firestore.client()
 
 #users collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
 def get_users():
     users = list(db.collection(u'users').stream())
     users_dict = list(map(lambda x: x.to_dict(), users))
@@ -82,9 +82,7 @@ def get_users():
     return users_consolidated
 
 #chptrs collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
-#chptrs collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
 def get_chptrs():
     chptrs = list(db.collection(u'chptrs').stream())
     chptrs_dict = list(map(lambda x: x.to_dict(), chptrs))
@@ -156,7 +154,7 @@ def get_chptrs():
     return chptrs_consolidated
 
 #contributions collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
 def get_contributions():
     contributions = list(db.collection(u'contributions').stream())
     contributions_dict = list(map(lambda x: x.to_dict(), contributions))
@@ -323,7 +321,7 @@ contributions_sorted = pd.merge(contributions_sorted, contributions_sorted_date,
 contributions_sorted = contributions_sorted.drop_duplicates(["Date"])
 contributions_sorted = contributions_sorted.reset_index(drop=True)
 
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
 def get_comments():
     l=[]
     for i in range(len(contributions)):
