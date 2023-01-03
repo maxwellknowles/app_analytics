@@ -39,7 +39,7 @@ connect_to_firestore()
 db = firestore.client()
 
 #users collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_users():
     users = list(db.collection(u'users').stream())
     users_dict = list(map(lambda x: x.to_dict(), users))
@@ -52,6 +52,14 @@ def get_users():
             name = users['firstName'][i] + " " + users['lastName'][i]
         except TypeError:
             name = None
+        if len(str(users["creationDate"][i]))>4:
+            creationDate = users["creationDate"][i]
+            creationDate = creationDate.split("T")[0]
+            creationDate = datetime.strptime(creationDate, '%Y-%m-%d')
+            month = creationDate.month
+        else:
+            creationDate = None
+            month = None
         pendingChptrRequests = users["pendingChptrRequests"][i]
         count_pendingChptrRequests = len(pendingChptrRequests)
         email_allowed = users["allowsReceiveEmail"][i]
@@ -61,6 +69,8 @@ def get_users():
         tup = (selectedChptrID, 
             user_id,
             name,
+            creationDate,
+            month,
             pendingChptrRequests,
             count_pendingChptrRequests,
             email_allowed,
@@ -72,6 +82,8 @@ def get_users():
     users_consolidated = pd.DataFrame(l,columns=["Selected Chptr ID",
                                                 "User ID",
                                                 "User Name",
+                                                "Creation Date",
+                                                "Creation Month",
                                                 "Pending Chptr Requests",
                                                 "Count Pending Chptr Requests",
                                                 "Email Allowed",
@@ -82,7 +94,7 @@ def get_users():
     return users_consolidated
 
 #chptrs collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_chptrs():
     chptrs = list(db.collection(u'chptrs').stream())
     chptrs_dict = list(map(lambda x: x.to_dict(), chptrs))
@@ -154,7 +166,7 @@ def get_chptrs():
     return chptrs_consolidated
 
 #contributions collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_contributions():
     contributions = list(db.collection(u'contributions').stream())
     contributions_dict = list(map(lambda x: x.to_dict(), contributions))
@@ -321,7 +333,7 @@ contributions_sorted = pd.merge(contributions_sorted, contributions_sorted_date,
 contributions_sorted = contributions_sorted.drop_duplicates(["Date"])
 contributions_sorted = contributions_sorted.reset_index(drop=True)
 
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_comments():
     l=[]
     for i in range(len(contributions)):
@@ -357,17 +369,33 @@ def convert_df(df):
     return df.to_csv().encode('utf-8')
 
 #START OF STREAMLIT PAGE
-st.header("Chptr Analytics")
+st.title("Chptr Analytics")
 st.write("**Key Assumptions and Notes**")
 #st.write("• Chptr has yet to make a push on marketing")
 st.write("• Chptr has yet to monetize Chptr creation, but that is what should present a 'transaction' event")
 st.write("• Contributions to Chptrs represent engagement, but are not considered monetizable actions, now or in the future")
+
+#susan_kegan = contributions[(contributions['Chptr ID']=="1zLEDo87V3IMBOwhsLxm")]
+#susan_kegan = susan_kegan.reset_index(drop=True)
+#l=[]
+#for i in range(len(susan_kegan)):
+    #prompt = "a loved one's tribute, memory, or description of a loved one who has died named: "+susan_kegan['Chptr Name'][i]
+#    prompt = None
+#    completion = susan_kegan['Description'][i]
+#    tup = (prompt,completion)
+#    l.append(tup)
+#training = pd.DataFrame(l, columns=["prompt", "completion"])
+#training = training[(training["completion"]!="")]
+#training = training.reset_index(drop=True)
+
+#training_csv = convert_df(training)
+
 st.subheader("High Level Stats")
 col1, col2, col3 = st.columns(3)
 with col1:
     st.write("**USERS**")
     st.metric("Number of Users",len(users))
-    st.metric("Users with Contributions",len(users_with_contribution_count))
+    st.metric("Users Listed as Contributors",len(users_with_contribution_count))
     st.metric("Contributions per User", round(len(contributions)/len(users),2))
 with col2:
     st.write("**CHPTRS**")
@@ -387,28 +415,34 @@ with col3:
     #st.write("**RATINGS**")
     #st.metric("Five-Star Reviews", "100%", "153 reviews")
 
-contributions_categories = contributions[['Month','Count Categories']]
-contributions_categories = contributions_categories.set_index("Month")
-#st.bar_chart(contributions_categories)
+#aggregate contributions by month
+contributions_agg = contributions.groupby("Month").agg({"Month": 'count'})
+contributions_agg["Count of Contributions"] = contributions_agg["Month"]
+contributions_agg = contributions_agg.drop("Month", axis=1)
+contributions_agg = contributions_agg.rename_axis("Month")
 
-#graph of contributors
-contributions_contributors = contributions[['Month','Count Contributors']]
-contributions_contributors = contributions_contributors.set_index("Month")
-#st.bar_chart(contributions_contributors)
+#aggregate chptr publications by month
+chptrs_ordered_publications = chptrs_ordered.groupby("Month").agg({"Month": 'count'})
+chptrs_ordered_publications = chptrs_ordered_publications.rename_axis('Month Number')
+chptrs_ordered_publications["Chptrs"] = chptrs_ordered_publications["Month"]
+chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
 
-contributions_max_contributors = contributions.sort_values('Count Contributors', ascending=False).drop_duplicates(['Chptr ID'])
-contributions_max_contributors = contributions_max_contributors[["Month","Count Contributors"]]
-contributions_max_contributors = contributions_max_contributors.set_index("Month")
+#accounts created by month
+users_month = users.groupby("Creation Month").agg({"Creation Month": 'count'})
+users_month = users_month.rename_axis('Creation Month Number')
+users_month["Users"] = users_month["Creation Month"]
+users_month = users_month.drop("Creation Month", axis=1)
+
+#join chptrs, contributions, and users
+st.subheader("Chptrs, Contributions, and Accounts Created by Month")
+by_month = pd.concat([contributions_agg, chptrs_ordered_publications, users_month], axis=1)
+st.bar_chart(by_month)
 
 tab1, tab2, tab3, tab4 = st.tabs(["Explore Chptrs", "Explore Contributions", "Explore Users", "Download Data"])
 
 with tab1:
     #chptrs over time
     st.subheader("Chptr Publications by Month")
-    chptrs_ordered_publications = chptrs_ordered.groupby("Month").agg({"Month": 'count'})
-    chptrs_ordered_publications = chptrs_ordered_publications.rename_axis('Month Number')
-    chptrs_ordered_publications["Chptrs"] = chptrs_ordered_publications["Month"]
-    chptrs_ordered_publications = chptrs_ordered_publications.drop("Month", axis=1)
     st.bar_chart(chptrs_ordered_publications)
 
     chptrs_contributions = contributions.groupby("Chptr ID").agg({"Contribution ID": 'count'})
@@ -575,6 +609,10 @@ with tab1:
     #st.map(chptrs_lat_lon)
 
 with tab2:
+    #contributions per chptr over time
+    st.subheader("Count of Total Contributions by Month")
+    st.bar_chart(contributions_agg)
+
     #contributors per chptr over time
     st.subheader("Avg Count of Contributors per Chptr by Month")
     chptrs_ordered_contributors = chptrs_ordered[["Month","Count Contributors"]]
@@ -709,7 +747,10 @@ with tab2:
             mime='text/csv',
             )
     with col2:
-        st.write(fig)
+        try:
+            st.write(fig)
+        except ValueError:
+            pass
 
     st.subheader("Days Since Last Contribution by Chptr")
     #today
@@ -760,6 +801,10 @@ with tab2:
 l=[]
 
 with tab3:
+    #user creation over time
+    st.subheader("Account Creation by Month")
+    st.bar_chart(users_month)
+
     st.subheader("Users with Pending Chptr Requests")
     users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
     users_pending_invites = users_pending_invites.reset_index(drop=True)
@@ -781,7 +826,7 @@ with tab3:
     users_pending = users_pending.drop("Date", axis=1)
     st.dataframe(users_pending)
 
-    st.subheader("Users without a chptr or contribution")
+    #st.subheader("Users without a chptr or contribution")
     owners_list = []
     contributors_list = []
     for i in range(len(chptrs)):
@@ -811,20 +856,21 @@ with tab3:
             tup = (user_id, name)
             l.append(tup)
     unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
-    st.write("Users without a chptr or contribution: ", len(unactivated_df))
-    st.dataframe(unactivated_df)
+    unactivated_df = unactivated_df.drop_duplicates("User ID")
+    #st.write("Users without a chptr or contribution: ", len(unactivated_df))
+    #st.dataframe(unactivated_df)
 
     #download unactivated data
-    st.write("**Unactivated data**")
+    #st.write("**Unactivated data**")
 
-    unactivated_df_csv = convert_df(unactivated_df)
+    #unactivated_df_csv = convert_df(unactivated_df)
 
-    st.download_button(
-        label="Download unactivated user data as CSV",
-        data=unactivated_df_csv,
-        file_name='unactivated_users.csv',
-        mime='text/csv',
-        )
+    #st.download_button(
+    #   label="Download unactivated user data as CSV",
+    #    data=unactivated_df_csv,
+    #    file_name='unactivated_users.csv',
+    #    mime='text/csv',
+    #    )
 
 
     users_chptrs = chptrs.groupby("Chptr Owner").agg({"Chptr ID":"count"})
@@ -899,7 +945,6 @@ with tab3:
 
     with col2:
         st.write(fig)
-
 
     #count of users at each contribution level
     st.subheader("Count of Users by Contribution Number")
