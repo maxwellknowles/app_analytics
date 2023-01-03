@@ -415,6 +415,7 @@ with col3:
     #st.write("**RATINGS**")
     #st.metric("Five-Star Reviews", "100%", "153 reviews")
 
+#join chptrs, contributions, and users
 #aggregate contributions by month
 contributions_agg = contributions.groupby("Month").agg({"Month": 'count'})
 contributions_agg["Count of Contributions"] = contributions_agg["Month"]
@@ -433,11 +434,24 @@ users_month = users_month.rename_axis('Creation Month Number')
 users_month["Users"] = users_month["Creation Month"]
 users_month = users_month.drop("Creation Month", axis=1)
 
-#join chptrs, contributions, and users
-st.subheader("Chptrs, Contributions, and Accounts Created by Month")
+#concat dataframes
 by_month = pd.concat([contributions_agg, chptrs_ordered_publications, users_month], axis=1)
+
+st.subheader("Chptrs, Contributions, and Accounts Created by Month")
 st.bar_chart(by_month)
 
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("New Contributions / New Chptrs by Month")   
+    by_month["Contributions per Chptr"] = by_month["Count of Contributions"]/by_month["Chptrs"]
+    contributions_rate_month = by_month[["Contributions per Chptr"]]
+    st.line_chart(contributions_rate_month)
+with col2:
+    st.subheader("New Chptrs / New Users by Month")   
+    by_month["Chptrs per User"] = by_month["Chptrs"]/by_month["Users"]
+    chptrs_rate_month = by_month[["Chptrs per User"]]
+    st.line_chart(chptrs_rate_month)
+    
 tab1, tab2, tab3, tab4 = st.tabs(["Explore Chptrs", "Explore Contributions", "Explore Users", "Download Data"])
 
 with tab1:
