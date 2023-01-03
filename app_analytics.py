@@ -32,7 +32,7 @@ def connect_to_firestore():
     #connecting to firebase
     cred = credentials.Certificate(JSON_DATA)
     firebase_admin.initialize_app(cred, {
-        'databaseURL': 'https://console.firebase.google.com/u/2/project/chptr-b101d/firestore/data'
+        'databaseURL': st.secrets['databaseURL']
     })
 connect_to_firestore()
     
