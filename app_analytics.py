@@ -819,72 +819,70 @@ with tab3:
     st.subheader("Account Creation by Month")
     st.bar_chart(users_month)
 
-    st.subheader("Users with Pending Chptr Requests")
-    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
-    users_pending_invites = users_pending_invites.reset_index(drop=True)
-    for i in range(len(users_pending_invites)):
-        user_id = users_pending_invites["User ID"][i]
-        user_name = users_pending_invites["User Name"][i]
-        for k in users_pending_invites["Pending Chptr Requests"][i]:
-            pending_chptr = k
-            pending_chptr_invite = "https://chptrprod.page.link?amv=0&apn=com.chptr.chptr&ibi=com.chptr.chptr&imv=0&isi=1620239435&link=https%3A%2F%2Fchptrprod.page.link%2Fview%3FchptrID%3D"+pending_chptr
-            tup = (user_id, user_name, pending_chptr, pending_chptr_invite)
-            l.append(tup)
-    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr", "Invitation Link"])
-    st.write("Count of pending requests: ", len(users_pending))
-    users_pending = users_pending.sort_values("User ID")
-    users_pending = users_pending.reset_index(drop=True)
-    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
-    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Invitation Link", "Date"]]
-    users_pending["Chptr Date"] = users_pending["Date"]
-    users_pending = users_pending.drop("Date", axis=1)
-    st.dataframe(users_pending)
-
-    #st.subheader("Users without a chptr or contribution")
+    st.subheader("Activation")
     owners_list = []
-    contributors_list = []
     for i in range(len(chptrs)):
         owner = chptrs["Chptr Owner"][i]
         tup = (owner)
         owners_list.append(owner)
-        contributors = chptrs["Contributors"][i]
-        contributors_list += contributors
-        #contributors_list.append(contributor)
+
+    contributors_list = []
+    for i in range(len(contributions)):
+        owner = contributions["Contributor"][i]["id"]
+        tup = (owner)
+        contributors_list.append(owner)   
+
     final_list = owners_list + contributors_list
     final_set = set(final_list)
-
-    users_list = []
-    for i in range(len(users)):
-        user = users["User ID"][i]
-        tup = (user)
-        users_list.append(user)
-    
-    users_set = set(users_list)
-    unactivated_list = users_set - final_set 
+    final_count = len(final_set)
 
     l=[]
     for i in range(len(users)):
-        if users["User ID"][i] in unactivated_list:
-            user_id = users["User ID"][i]
-            name = users["User Name"][i]
-            tup = (user_id, name)
-            l.append(tup)
-    unactivated_df = pd.DataFrame(l, columns=["User ID", "User Name"])
-    unactivated_df = unactivated_df.drop_duplicates("User ID")
-    #st.write("Users without a chptr or contribution: ", len(unactivated_df))
-    #st.dataframe(unactivated_df)
+        user_id = users["User ID"][i]
+        creation_date = users["Creation Month"][i]
+        if user_id in final_list:
+            activated = True
+        else:
+            activated = False
+        tup=(user_id, creation_date, activated)
+        l.append(tup)
+    activation_df=pd.DataFrame(l, columns=["User ID", "Month", "Activated"])
+    activation_df=activation_df.drop_duplicates("User ID")
+    activation_df=activation_df.reset_index(drop=True)
+    all_users = activation_df.groupby("Month").agg({"Activated": 'count'})
+    all_users["Accounts Created"]=all_users["Activated"]
+    all_users = all_users.drop("Activated", axis=1)
+    #activated = activated.reset_index(drop=True)
+    st.metric("Total Accounts Created", sum(all_users["Accounts Created"]))
+
+    activated=activation_df[(activation_df["Activated"]==True)]
+    activated = activated.groupby("Month").agg({"Activated": 'count'})
+    activated["Accounts Activated"]=activated["Activated"]
+    activated = activated.drop("Activated", axis=1)
+    #activated = activated.reset_index(drop=True)
+    st.metric("Total Accounts Activated", sum(activated["Accounts Activated"]))
+
+    st.metric("All-Time Activation Rate", str(100*round(sum(activated["Accounts Activated"])/sum(all_users["Accounts Created"]),2))+"%")
+
+    activation = pd.concat([all_users, activated], axis=1)
+    st.bar_chart(activation)
+
+    activation["Activation Rate"] = activation["Accounts Activated"]/activation["Accounts Created"]
+    activation1=activation
+    activation1=activation1[["Activation Rate"]]
+    st.line_chart(activation1)
 
     #download unactivated data
-    #st.write("**Unactivated data**")
+    st.write("**Activation data**")
 
-    #unactivated_df_csv = convert_df(unactivated_df)
+    activation_df_csv = convert_df(activation)
 
-    #st.download_button(
-    #   label="Download unactivated user data as CSV",
-    #    data=unactivated_df_csv,
-    #    file_name='unactivated_users.csv',
-    #    mime='text/csv',
-    #    )
+    st.download_button(
+       label="Download activation data as CSV",
+        data=activation_df_csv,
+        file_name='chptr_activation.csv',
+        mime='text/csv',
+        )
 
 
     users_chptrs = chptrs.groupby("Chptr Owner").agg({"Chptr ID":"count"})
