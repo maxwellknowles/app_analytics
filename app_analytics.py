@@ -39,7 +39,7 @@ connect_to_firestore()
 db = firestore.client()
 
 #users collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_users():
     users = list(db.collection(u'users').stream())
     users_dict = list(map(lambda x: x.to_dict(), users))
@@ -94,7 +94,7 @@ def get_users():
     return users_consolidated
 
 #chptrs collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_chptrs():
     chptrs = list(db.collection(u'chptrs').stream())
     chptrs_dict = list(map(lambda x: x.to_dict(), chptrs))
@@ -166,7 +166,7 @@ def get_chptrs():
     return chptrs_consolidated
 
 #contributions collection to dataframe
-@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=3600)
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=43200)
 def get_contributions():
     contributions = list(db.collection(u'contributions').stream())
     contributions_dict = list(map(lambda x: x.to_dict(), contributions))
@@ -174,6 +174,7 @@ def get_contributions():
     l=[]
     for i in range(len(contributions)):
         contribution_id = contributions['id'][i]
+        contribution_owner = contributions['owner'][i]
         chptrId = contributions['chptrId'][i]
         chptr_name = contributions['chptrName'][i]
         date = contributions['creationDate'][i]
@@ -200,6 +201,7 @@ def get_contributions():
         elif contributions['mediaType'][i] == "":
             content = None
         tup = (contribution_id,
+            contribution_owner,
             chptrId, 
             chptr_name, 
             date, 
@@ -218,6 +220,7 @@ def get_contributions():
             content)
         l.append(tup)
         contributions_consolidated = pd.DataFrame(l,columns=["Contribution ID",
+                                                            "Contributor",
                                                             "Chptr ID", 
                                                             "Chptr Name", 
                                                             "Date", 
