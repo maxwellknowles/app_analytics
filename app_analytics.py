@@ -174,7 +174,7 @@ def get_contributions():
     l=[]
     for i in range(len(contributions)):
         contribution_id = contributions['id'][i]
-        contribution_owner = contributions['owner'][i]
+        contribution_owner = contributions['owner'][i]["id"]
         chptrId = contributions['chptrId'][i]
         chptr_name = contributions['chptrName'][i]
         date = contributions['creationDate'][i]
@@ -398,7 +398,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.write("**USERS**")
     st.metric("Number of Users",len(users))
-    st.metric("Users Listed as Contributors",len(users_with_contribution_count))
+    st.metric("Contributors Listed",len(users_with_contribution_count))
     st.metric("Contributions per User", round(len(contributions)/len(users),2))
 with col2:
     st.write("**CHPTRS**")
@@ -411,7 +411,8 @@ with col3:
     st.metric("Number of Contributions",len(contributions))
     st.metric("Contributions per Chptr",round(len(contributions)/len(chptrs),2))
     st.metric("Contributors per Chptr",round(sum(chptrs["Number of Contributors"])/len(chptrs),2))
-    #st.metric("Categories per Contribution",round(statistics.mean(contributions["Count Categories"]),2))
+    contributors_agg = contributions.groupby("Contributor").agg({"Contributor": 'count'})
+    st.metric("Total Contributions per Contributor",round(statistics.mean(contributors_agg['Contributor']),2))
     st.metric("Comments per Contribution",round(statistics.mean(contributions["Comments"]),2))
 
 #with col4:
@@ -454,7 +455,7 @@ with col2:
     by_month["Chptrs per User"] = by_month["Chptrs"]/by_month["Users"]
     chptrs_rate_month = by_month[["Chptrs per User"]]
     st.line_chart(chptrs_rate_month)
-    
+
 tab1, tab2, tab3, tab4 = st.tabs(["Explore Chptrs", "Explore Contributions", "Explore Users", "Download Data"])
 
 with tab1:
@@ -815,8 +816,6 @@ with tab2:
     chptrs_ordered_description = chptrs_ordered_description.groupby("Month").agg({"Length of Description_x": 'mean'})
     st.bar_chart(chptrs_ordered_description)
 
-l=[]
-
 with tab3:
     #user creation over time
     st.subheader("Account Creation by Month")
@@ -831,7 +830,7 @@ with tab3:
 
     contributors_list = []
     for i in range(len(contributions)):
-        owner = contributions["Contributor"][i]["id"]
+        owner = contributions["Contributor"][i]
         tup = (owner)
         contributors_list.append(owner)   
 
@@ -887,6 +886,26 @@ with tab3:
         mime='text/csv',
         )
 
+    st.subheader("Users with Pending Chptr Requests")
+    users_pending_invites = users[(users["Count Pending Chptr Requests"]>0)]
+    users_pending_invites = users_pending_invites.reset_index(drop=True)
+    for i in range(len(users_pending_invites)):
+        user_id = users_pending_invites["User ID"][i]
+        user_name = users_pending_invites["User Name"][i]
+        for k in users_pending_invites["Pending Chptr Requests"][i]:
+            pending_chptr = k
+            pending_chptr_invite = "https://chptrprod.page.link?amv=0&apn=com.chptr.chptr&ibi=com.chptr.chptr&imv=0&isi=1620239435&link=https%3A%2F%2Fchptrprod.page.link%2Fview%3FchptrID%3D"+pending_chptr
+            tup = (user_id, user_name, pending_chptr, pending_chptr_invite)
+            l.append(tup)
+    users_pending = pd.DataFrame(l, columns=["User ID", "User Name", "Pending Chptr", "Invitation Link"])
+    st.write("Count of pending requests: ", len(users_pending))
+    users_pending = users_pending.sort_values("User ID")
+    users_pending = users_pending.reset_index(drop=True)
+    users_pending = pd.merge(users_pending, chptrs_ordered, how='left', left_on="Pending Chptr", right_on="Chptr ID")
+    users_pending = users_pending[["User ID", "User Name", "Pending Chptr", "Invitation Link", "Date"]]
+    users_pending["Chptr Date"] = users_pending["Date"]
+    users_pending = users_pending.drop("Date", axis=1)
+    st.dataframe(users_pending)
 
     users_chptrs = chptrs.groupby("Chptr Owner").agg({"Chptr ID":"count"})
     users_chptrs["Chptrs Created"] = users_chptrs["Chptr ID"]
