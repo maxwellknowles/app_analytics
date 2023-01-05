@@ -414,8 +414,8 @@ with col3:
     st.metric("Number of Contributions",len(contributions))
     st.metric("Contributions per Chptr",round(len(contributions)/len(chptrs),2))
     st.metric("Contributors per Chptr",round(sum(chptrs["Number of Contributors"])/len(chptrs),2))
-    contributors_agg = contributions.groupby("Contributor").agg({"Contributor": 'count'})
-    st.metric("Total Contributions per Contributor",round(statistics.mean(contributors_agg['Contributor']),2))
+    contributors_agg = contributions.groupby("Contributor ID").agg({"Contributor ID": 'count'})
+    st.metric("Total Contributions per Contributor",round(statistics.mean(contributors_agg['Contributor ID']),2))
     st.metric("Comments per Contribution",round(statistics.mean(contributions["Comments"]),2))
 
 #with col4:
