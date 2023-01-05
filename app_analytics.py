@@ -174,7 +174,8 @@ def get_contributions():
     l=[]
     for i in range(len(contributions)):
         contribution_id = contributions['id'][i]
-        contribution_owner = contributions['owner'][i]["id"]
+        contribution_owner_id = contributions['owner'][i]["id"]
+        contribution_owner_name = contributions['owner'][i]["name"]
         chptrId = contributions['chptrId'][i]
         chptr_name = contributions['chptrName'][i]
         date = contributions['creationDate'][i]
@@ -201,7 +202,8 @@ def get_contributions():
         elif contributions['mediaType'][i] == "":
             content = None
         tup = (contribution_id,
-            contribution_owner,
+            contribution_owner_id,
+            contribution_owner_name,
             chptrId, 
             chptr_name, 
             date, 
@@ -220,7 +222,8 @@ def get_contributions():
             content)
         l.append(tup)
         contributions_consolidated = pd.DataFrame(l,columns=["Contribution ID",
-                                                            "Contributor",
+                                                            "Contributor ID",
+                                                            "Contributor Name",
                                                             "Chptr ID", 
                                                             "Chptr Name", 
                                                             "Date", 
@@ -830,7 +833,7 @@ with tab3:
 
     contributors_list = []
     for i in range(len(contributions)):
-        owner = contributions["Contributor"][i]
+        owner = contributions["Contributor ID"][i]
         tup = (owner)
         contributors_list.append(owner)   
 
