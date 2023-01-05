@@ -404,8 +404,8 @@ with col2:
     st.write("**CHPTRS**")
     st.metric("Number of Chptrs",len(chptrs))
     st.metric("Number of Cities with Chptrs",len(pd.unique(chptrs['Location'])))
-    owners_agg = chptrs_ordered.groupby("Owner").agg({"Owner": 'count'})
-    st.metric("Number of Chptrs per Owner",round(statistics.mean(owners_agg['Owner']),2))
+    owners_agg = chptrs.groupby("Chptr Owner").agg({"Chptr Owner": 'count'})
+    st.metric("Number of Chptrs per Owner",round(statistics.mean(owners_agg['Chptr Owner']),2))
 with col3:
     st.write("**CONTRIBUTIONS**")
     st.metric("Number of Contributions",len(contributions))
