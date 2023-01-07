@@ -25,6 +25,7 @@ st.set_page_config(page_title="Chptr Analytics", page_icon=":rocket:", layout="w
 #JSON_DATA = {"key":st.secrets['google_key_file']}
 secret = str(st.secrets['google_key_file'])
 JSON_DATA = ast.literal_eval(secret)
+databaseURL = st.secrets["databaseURL"]
 
 #functions
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
@@ -32,7 +33,7 @@ def connect_to_firestore():
     #connecting to firebase
     cred = credentials.Certificate(JSON_DATA)
     firebase_admin.initialize_app(cred, {
-        'databaseURL': 'https://console.firebase.google.com/u/2/project/chptr-b101d/firestore/data'
+        'databaseURL': {databaseURL}
     })
 connect_to_firestore()
     
